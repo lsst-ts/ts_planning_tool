@@ -32,7 +32,8 @@ import os
 
 
 # Your JIRA Cloud base URL
-BASE_URL = "https://api.zephyrscale.smartbear.com/v2/"
+ZEPHYR_BASE_URL = "https://api.zephyrscale.smartbear.com/v2/"
+JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"
 
 
 class ZephyrInterface:
@@ -69,9 +70,10 @@ class ZephyrInterface:
         The base URL of the Jira instance.
     """
 
-    def __init__(self, api_token=None, base_url=BASE_URL, log=None):
+    def __init__(self, api_token=None, zephyr_base_url=ZEPHYR_BASE_URL, jira_base_url=JIRA_BASE_URL, log=None):
         self.api_token = api_token
-        self.base_url = base_url
+        self.zephyr_base_url = zephyr_base_url
+        self.jira_base_url = jira_base_url
         self.log = logging.getLogger(type(self).__name__) if log is None else log.getChild(type(self).__name__)
 
     @staticmethod
@@ -116,7 +118,7 @@ class ZephyrInterface:
                 #tag/Test-Cases/operation/getTestCase
         """
         endpoint = f"testcases/{test_case_key}"
-        url = self.base_url + endpoint
+        url = self.zephyr_base_url + endpoint
 
         headers = {
             "Authorization": f"Bearer {self.api_token}",
@@ -151,7 +153,7 @@ class ZephyrInterface:
                 #tag/Test-Cases/operation/getTestCaseTestSteps
         """
         endpoint = f"testcases/{test_case_key}/teststeps"
-        url = self.base_url + endpoint
+        url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
@@ -181,7 +183,7 @@ class ZephyrInterface:
                 #tag/Test-Cycles/operation/getTestCycle
         """
         endpoint = f"testcycles/{test_cycle_key}"
-        url = self.base_url + endpoint
+        url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
@@ -214,7 +216,7 @@ class ZephyrInterface:
                 #tag/Test-Executions/operation/getTestExecution
         """
         endpoint = f"testexecutions/{test_execution_key}"
-        url = self.base_url + endpoint
+        url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
@@ -247,7 +249,7 @@ class ZephyrInterface:
                 #tag/Test-Executions/operation/getTestExecutionTestSteps
         """
         endpoint = f"testexecutions/{test_execution_key}/teststeps"
-        url = self.base_url + endpoint
+        url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
@@ -282,7 +284,7 @@ class ZephyrInterface:
                 #tag/Test-Executions/operation/getTestExecutions
         """
         endpoint = "testexecutions"
-        url = self.base_url + endpoint
+        url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
@@ -348,7 +350,7 @@ class ZephyrInterface:
                 #tag/Statuses/operation/listStatuses
         """
         endpoint = "statuses"
-        url = self.base_url + endpoint
+        url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.api_token}",
             "Content-Type": "application/json",
