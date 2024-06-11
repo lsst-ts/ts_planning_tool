@@ -72,7 +72,7 @@ class ZephyrInterface:
     def __init__(self, api_token=None, base_url=BASE_URL, log=None):
         self.api_token = api_token
         self.base_url = base_url
-        self.log = log
+        self.log = logging.getLogger(type(self).__name__) if log is None else log.getChild(type(self).__name__)
 
     @staticmethod
     def extract_test_case_from_test_execution(test_execution_json):
