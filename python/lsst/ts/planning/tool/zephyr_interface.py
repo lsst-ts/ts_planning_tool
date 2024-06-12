@@ -24,12 +24,13 @@ __all__ = [
     "run_zephyr_interface",
 ]
 
-import aiohttp
 import asyncio
 import json
 import logging
 import os
 
+import aiohttp
+from aiohttp import BasicAuth
 
 # Your JIRA Cloud base URL
 ZEPHYR_BASE_URL = "https://api.zephyrscale.smartbear.com/v2/"
@@ -55,7 +56,8 @@ class ZephyrInterface:
         https://rubinobs.atlassian.net/plugins/servlet/ac/com.kanoah.test-manager/api-access-tokens
 
     Then, store the API tokens inside the JIRA_API_TOKEN and ZEPHYR_API_TOKEN
-    environment variables.
+    environment variables. You will also want to store your username in the
+    ZEPHYR_USERNAME and in the JIRA_USERNAME environment variables.
 
     Parameters
     ----------
@@ -76,16 +78,19 @@ class ZephyrInterface:
 
     def __init__(
         self,
+        jira_api_token=None,
+        jira_base_url=JIRA_BASE_URL,
+        jira_username=None,
         zephyr_api_token=None,
         zephyr_base_url=ZEPHYR_BASE_URL,
-        jira_base_url=JIRA_BASE_URL,
-        jira_api_token=None,
         log=None,
     ):
+        self.jira_api_token = jira_api_token
+        self.jira_base_url = jira_base_url
+        self.jira_username = jira_username
         self.zephyr_api_token = zephyr_api_token
         self.zephyr_base_url = zephyr_base_url
-        self.jira_base_url = jira_base_url
-        self.jira_api_token = jira_api_token
+
         self.log = (
             logging.getLogger(type(self).__name__)
             if log is None
@@ -210,7 +215,8 @@ class ZephyrInterface:
                 self.log.debug(
                     f"Querying test cycle {test_cycle_key}. Got response: {values=}"
                 )
-                return values
+
+        return values
 
     async def get_test_cycles(self, max_results=20, start_at=0, project_key="BLOCK"):
         """
@@ -258,12 +264,14 @@ class ZephyrInterface:
 
         # Replace URL and ID with human readable strings
         for value in test_cycles["values"]:
-            status = await self.get_status(value["status"])
-            project = await self.get_project(value["project"])
-            owner = await self.get_user_name(value["owner"])
-            print(
+            value["status"] = await self.get_status(value["status"]["id"])
+            value["project"] = await self.get_project(value["project"]["id"])
+            value["owner"] = await self.get_user_name(value["owner"]["accountId"])
+            self.log.debug(
                 f"{value['key']}\n  "
-                f"Status: {status}, Project: {project}, Owner: {owner}\n  "
+                f"Status: {value['status']}, "
+                f"Project: {value['project']}, "
+                f"Owner: {value['owner']}\n  "
             )
 
         return test_cycles
@@ -377,55 +385,56 @@ class ZephyrInterface:
 
         return values
 
-    async def get_user_name(self, json_object):
+    async def get_user_name(self, account_id):
         """
-        Get the user name based on a JSON object containing "self" and "accountId" keys.
+        Get the user name based on a JSON object containing "self"
+        and "accountId" keys.
 
         Parameters
         ----------
-        json_object : dict
-            The JSON object representing the user. It should contain the
-            "self" and "key" keys.
+        account_id : int
+            The account ID of the user.
 
         Returns
         -------
         str
             The user name.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Users/operation/getUser
         """
-        user_key = json_object["accountId"]
         endpoint = "user"
         url = self.jira_base_url + endpoint
 
         if self.jira_api_token is None:
             raise ValueError("JIRA API token is not set")
 
-        headers = {
-            "Authorization": f"Bearer {self.jira_api_token}",
-            "Content-Type": "application/json",
-        }
         query_parameters = {
-            "accountId": user_key,
+            "accountId": account_id,
         }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            response = await session.get(url, headers=headers, params=query_parameters)
-            user = await response.json()
 
-        return user["name"]
+        async with aiohttp.ClientSession(
+            auth=BasicAuth(f"{self.jira_username}@lsst.org", self.jira_api_token)
+        ) as session:
+            async with session.get(url, params=query_parameters) as response:
+                response_text = await response.text()
+                if response.status == 200:
+                    user_details = await response.json()
+                    self.log.debug(
+                        f"Token is working fine. User display name: {user_details['displayName']}"
+                    )
+                else:
+                    raise aiohttp.ClientError(
+                        f"Failed to authenticate. Status code: {response.status} {response_text}"
+                    )
+        return user_details["displayName"]
 
-    async def get_project(self, json_object):
+    async def get_project(self, project_id):
         """
-        Query the project based on a JSON object containing "self" and "id" keys.
+        Query the project based on a JSON object containing "self" and
+        "id" keys.
 
         Parameters
         ----------
-        json_object : dict
-            The JSON object representing the project. It should contain the
-            "self" and "id" keys.
+        project_id : int
+            And number representing the project ID.
 
         Returns
         -------
@@ -437,7 +446,6 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Projects/operation/getProject
         """
-        project_id = json_object["id"]
         endpoint = f"projects/{project_id}"
         url = self.zephyr_base_url + endpoint
         headers = {
@@ -450,15 +458,14 @@ class ZephyrInterface:
 
         return project["key"]
 
-    async def get_status(self, json_object):
+    async def get_status(self, status_id):
         """
         Get the details of a status.
 
         Parameters
         ----------
-        json_object : dict
-            The JSON object representing the status. It should contain the
-            "self" and the "id" keys.
+        status_id : int
+            The ID of the status.
 
         Returns
         -------
@@ -470,8 +477,7 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Statuses/operation/getStatus
         """
-        status_id = json_object["id"]
-        endpoint = f"statuses/{status_id}"
+        endpoint = f"statuses/{status_id:d}"
         url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.zephyr_api_token}",
@@ -519,79 +525,78 @@ async def run_example():
     # Create a ZephyrInterface object
     zephyr_api_token = os.getenv("ZEPHYR_API_TOKEN")
     jira_api_token = os.getenv("JIRA_API_TOKEN")
+    jira_username = os.getenv("JIRA_USERNAME")
 
     zephyr_interface = ZephyrInterface(
+        jira_api_token=jira_api_token,
+        jira_username=jira_username,
         zephyr_api_token=zephyr_api_token,
-        jira_api_token=jira_api_token
     )
 
-    # # Retrieve all available statuses
-    # statuses = await zephyr_interface.get_statuses()
-    # with open("statuses.json", "w") as file:
-    #     json.dump(statuses, file, indent=4)
-    # print(f"\nSaved statuses inside \"{file.name}\"")
+    # Retrieve all available statuses
+    statuses = await zephyr_interface.get_statuses()
+    with open("statuses.json", "w") as file:
+        json.dump(statuses, file, indent=4)
+    print(f'\nSaved statuses inside "{file.name}"')
 
-    # # Retrieve a status
-    # status_id = 6360083
-    # status = await zephyr_interface.get_status(status_id)
-    # print(f"Status with ID \"{status_id}\": {status}\n")
+    # Retrieve a test case
+    test_case_key = "BLOCK-T21"
+    test_case = await zephyr_interface.get_test_case(test_case_key)
+    with open(f"{test_case_key}.json", "w") as file:
+        json.dump(test_case, file, indent=4)
+    print(f"Saved data from {test_case_key} inside {file.name}")
 
-    # # Retrieve a test case
-    # test_case_key = "BLOCK-T21"
-    # test_case = await zephyr_interface.get_test_case(test_case_key)
-    # with open(f"{test_case_key}.json", "w") as file:
-    #     json.dump(test_case, file, indent=4)
-    # print(f"Saved data from {test_case_key} inside {file.name}")
+    # Retrieve steps in a test case
+    test_case_steps = await zephyr_interface.get_test_case_steps(test_case_key)
+    with open(f"{test_case_key}_steps.json", "w") as file:
+        json.dump(test_case_steps, file, indent=4)
+    print(f"Saved data from {test_case_key} inside {file.name}")
 
-    # # Retrieve steps in a test case
-    # test_case_steps = await zephyr_interface.get_test_case_steps(test_case_key)
-    # with open(f"{test_case_key}_steps.json", "w") as file:
-    #     json.dump(test_case_steps, file, indent=4)
-    # print(f"Saved data from {test_case_key} inside {file.name}")
+    # # Retrieve a test cycle
+    test_cycle_key = "BLOCK-R19"
+    test_cycle = await zephyr_interface.get_test_cycle(test_cycle_key)
+    with open(f"{test_cycle_key}.json", "w") as file:
+        json.dump(test_cycle, file, indent=4)
+    print(f"Saved data from {test_cycle_key} inside {file.name}")
 
-    # # # Retrieve a test cycle
-    # test_cycle_key = "BLOCK-R19"
-    # test_cycle = await zephyr_interface.get_test_cycle(test_cycle_key)
-    # with open(f"{test_cycle_key}.json", "w") as file:
-    #     json.dump(test_cycle, file, indent=4)
-    # print(f"Saved data from {test_cycle_key} inside {file.name}")
+    # Retrieve test executions inside a test cycle
+    test_executions = await zephyr_interface.get_test_executions(test_cycle_key)
+    with open(f"{test_cycle_key}_executions.json", "w") as file:
+        json.dump(test_executions, file, indent=4)
+    print(f"Saved data from {test_cycle_key} inside {file.name}")
 
-    # # Retrieve test executions inside a test cycle
-    # test_executions = await zephyr_interface.get_test_executions(test_cycle_key)
-    # with open(f"{test_cycle_key}_executions.json", "w") as file:
-    #     json.dump(test_executions, file, indent=4)
-    # print(f"Saved data from {test_cycle_key} inside {file.name}")
+    # Retrieve a specific test execution
+    test_execution_key = "BLOCK-E192"
+    test_execution = await zephyr_interface.get_test_execution(test_execution_key)
+    with open(f"{test_execution_key}.json", "w") as file:
+        json.dump(test_execution, file, indent=4)
+    print(f"Saved data from {test_execution_key} inside {file.name}")
 
-    # # Retrieve a specific test execution
-    # test_execution_key = "BLOCK-E192"
-    # test_execution = await zephyr_interface.get_test_execution(test_execution_key)
-    # with open(f"{test_execution_key}.json", "w") as file:
-    #     json.dump(test_execution, file, indent=4)
-    # print(f"Saved data from {test_execution_key} inside {file.name}")
+    # Retrieve the test case name and version from the test execution
+    (
+        test_case_name,
+        test_case_version,
+    ) = zephyr_interface.extract_test_case_from_test_execution(test_execution)
+    print(
+        f"From {test_execution_key}, Test case name: {test_case_name}, "
+        f"Test case version: {test_case_version}\n"
+    )
 
-    # # Retrieve the test case name and version from the test execution
-    # (
-    #     test_case_name,
-    #     test_case_version,
-    # ) = zephyr_interface.extract_test_case_from_test_execution(test_execution)
-    # print(
-    #     f"From {test_execution_key}, Test case name: {test_case_name}, "
-    #     f"Test case version: {test_case_version}\n"
-    # )
-
-    # # Retrieve steps in a test execution
-    # test_execution_steps = await zephyr_interface.get_test_execution_steps(
-    #     test_execution_key
-    # )
-    # with open(f"{test_execution_key}_steps.json", "w") as file:
-    #     json.dump(test_execution_steps, file, indent=4)
-    # print(f"Saved data from {test_execution_key} inside {file.name}")
+    # Retrieve steps in a test execution
+    test_execution_steps = await zephyr_interface.get_test_execution_steps(
+        test_execution_key
+    )
+    with open(f"{test_execution_key}_steps.json", "w") as file:
+        json.dump(test_execution_steps, file, indent=4)
+    print(f"Saved data from {test_execution_key} inside {file.name}")
 
     # Retrieve test cycles
-    test_cycles = await zephyr_interface.get_test_cycles()
+    print("Querying many test cycles...")
+    test_cycles = await zephyr_interface.get_test_cycles(start_at=20)
+    print("Got them. ")
 
-    for test_cycles in test_cycles["values"]:
-        print(test_cycles["name"], test_cycles["key"])
+    for test_cycle in test_cycles["values"]:
+        print(test_cycle["name"], test_cycle["key"])
 
     with open("test_cycles.json", "w") as file:
         json.dump(test_cycles, file, indent=4)
