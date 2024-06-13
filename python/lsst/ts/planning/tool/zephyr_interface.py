@@ -216,20 +216,28 @@ class ZephyrInterface:
                     f"Querying test cycle {test_cycle_key}. Got response: {values=}"
                 )
 
+        values["project"] = await self.get_project(values["project"]["id"])
+        values["status"] = await self.get_status(values["status"]["id"])
+        values["owner"] = await self.get_user_name(values["owner"]["accountId"])
+
         return values
 
-    async def get_test_cycles(self, max_results=20, start_at=0, project_key="BLOCK"):
+    async def get_test_cycles(
+        self, cycle_keys=None, max_results=20, start_at=0, project_key="BLOCK"
+    ):
         """
         Get all the test cycles.
 
         Parameters
         ----------
-        max_results : int
-            The maximum number of test cycles to return.
-        start_at : int
+        cycle_keys : dict, optional
+            A dictionary containing the query parameters.
+        max_results : int, optional
+            The maximum number of test cycles to return. Default: 20
+        start_at : int, optional
             The index of the first test cycle to return. The default is 0.
-            Should be a multiple of maxResults.
-        project_key : str
+            Should be a multiple of maxResults. Default: 0
+        project_key : str, optional
             The key of the Jira project. The default is "BLOCK".
 
         Returns
@@ -242,9 +250,11 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Cycles/operation/listTestCycles
         """
+        # Check if start_at is a multiple of max_results
         if start_at % max_results != 0:
             raise ValueError("startAt must be a multiple of maxResults")
 
+        # Prepare the query
         endpoint = "testcycles"
         url = self.zephyr_base_url + endpoint
         headers = {
@@ -256,25 +266,39 @@ class ZephyrInterface:
             "startAt": start_at,
             "projectKey": project_key,
         }
+
+        # Perform the query
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.get(
                 url=url, headers=headers, params=query_parameters
             ) as response:
-                test_cycles = await response.json()
 
-        # Replace URL and ID with human readable strings
-        for value in test_cycles["values"]:
-            value["status"] = await self.get_status(value["status"]["id"])
-            value["project"] = await self.get_project(value["project"]["id"])
-            value["owner"] = await self.get_user_name(value["owner"]["accountId"])
-            self.log.debug(
-                f"{value['key']}\n  "
-                f"Status: {value['status']}, "
-                f"Project: {value['project']}, "
-                f"Owner: {value['owner']}\n  "
-            )
+                if response.status == 200:
+                    test_cycles = await response.json()
+                    # We are only interested in the list of test cycles
+                    test_cycles = test_cycles["values"]
+                else:
+                    raise aiohttp.ClientError(
+                        f"Failed to query test cycles. Status code: {response.status}"
+                    )
 
-        return test_cycles
+        # Check if the query keys are valid
+        query_keys = ["id", "key"]
+        if cycle_keys is not None:
+            query_keys.extend(cycle_keys)
+
+        for key in query_keys:
+            if key not in test_cycles[0].keys():
+                raise KeyError(
+                    f"Query parameter {key} is not a queriable parameter in test cycles."
+                )
+
+        # Prepare the output
+        outputs = []
+        for cycle in test_cycles:
+            outputs.append({key: cycle[key] for key in query_keys})
+
+        return outputs
 
     async def get_test_execution(self, test_execution_key):
         """
@@ -539,31 +563,18 @@ async def run_example():
         json.dump(statuses, file, indent=4)
     print(f'\nSaved statuses inside "{file.name}"')
 
-    # Retrieve a test case
+    # # Retrieve a test case
     test_case_key = "BLOCK-T21"
     test_case = await zephyr_interface.get_test_case(test_case_key)
     with open(f"{test_case_key}.json", "w") as file:
         json.dump(test_case, file, indent=4)
     print(f"Saved data from {test_case_key} inside {file.name}")
 
-    # Retrieve steps in a test case
+    # # Retrieve steps in a test case
     test_case_steps = await zephyr_interface.get_test_case_steps(test_case_key)
     with open(f"{test_case_key}_steps.json", "w") as file:
         json.dump(test_case_steps, file, indent=4)
     print(f"Saved data from {test_case_key} inside {file.name}")
-
-    # # Retrieve a test cycle
-    test_cycle_key = "BLOCK-R19"
-    test_cycle = await zephyr_interface.get_test_cycle(test_cycle_key)
-    with open(f"{test_cycle_key}.json", "w") as file:
-        json.dump(test_cycle, file, indent=4)
-    print(f"Saved data from {test_cycle_key} inside {file.name}")
-
-    # Retrieve test executions inside a test cycle
-    test_executions = await zephyr_interface.get_test_executions(test_cycle_key)
-    with open(f"{test_cycle_key}_executions.json", "w") as file:
-        json.dump(test_executions, file, indent=4)
-    print(f"Saved data from {test_cycle_key} inside {file.name}")
 
     # Retrieve a specific test execution
     test_execution_key = "BLOCK-E192"
@@ -592,14 +603,30 @@ async def run_example():
 
     # Retrieve test cycles
     print("Querying many test cycles...")
-    test_cycles = await zephyr_interface.get_test_cycles(start_at=20)
+    test_cycles = await zephyr_interface.get_test_cycles(
+        start_at=20, cycle_keys=["name"]
+    )
     print("Got them. ")
 
-    for test_cycle in test_cycles["values"]:
-        print(test_cycle["name"], test_cycle["key"])
+    for tc in test_cycles:
+        print("  ", tc["key"], tc["name"])
 
     with open("test_cycles.json", "w") as file:
         json.dump(test_cycles, file, indent=4)
+        print(f"Saved data from test cycles inside {file.name}\n")
+
+    # Retrieve a test cycle
+    test_cycle_key = test_cycles[0]["key"]
+    test_cycle = await zephyr_interface.get_test_cycle(test_cycle_key)
+    with open(f"{test_cycle_key}.json", "w") as file:
+        json.dump(test_cycle, file, indent=4)
+    print(f"Saved data from {test_cycle_key} inside {file.name}")
+
+    # Retrieve test executions inside a test cycle
+    test_executions = await zephyr_interface.get_test_executions(test_cycle_key)
+    with open(f"{test_cycle_key}_executions.json", "w") as file:
+        json.dump(test_executions, file, indent=4)
+    print(f"Saved data from {test_cycle_key} inside {file.name}")
 
 
 def run_zephyr_interface():
