@@ -230,8 +230,8 @@ class ZephyrInterface:
 
         Parameters
         ----------
-        cycle_keys : dict, optional
-            A dictionary containing the query parameters.
+        cycle_keys : list, optional
+            A list containing the query parameters.
         max_results : int, optional
             The maximum number of test cycles to return. Default: 20
         start_at : int, optional
@@ -273,14 +273,9 @@ class ZephyrInterface:
                 url=url, headers=headers, params=query_parameters
             ) as response:
 
-                if response.status == 200:
-                    test_cycles = await response.json()
-                    # We are only interested in the list of test cycles
-                    test_cycles = test_cycles["values"]
-                else:
-                    raise aiohttp.ClientError(
-                        f"Failed to query test cycles. Status code: {response.status}"
-                    )
+                test_cycles = await response.json()
+                # We are only interested in the list of test cycles
+                test_cycles = test_cycles["values"]
 
         # Check if the query keys are valid
         query_keys = ["id", "key"]
@@ -438,16 +433,12 @@ class ZephyrInterface:
             auth=BasicAuth(f"{self.jira_username}@lsst.org", self.jira_api_token)
         ) as session:
             async with session.get(url, params=query_parameters) as response:
-                response_text = await response.text()
-                if response.status == 200:
-                    user_details = await response.json()
-                    self.log.debug(
-                        f"Token is working fine. User display name: {user_details['displayName']}"
-                    )
-                else:
-                    raise aiohttp.ClientError(
-                        f"Failed to authenticate. Status code: {response.status} {response_text}"
-                    )
+
+                user_details = await response.json()
+                self.log.debug(
+                    f"Token is working fine. User display name: {user_details['displayName']}"
+                )
+
         return user_details["displayName"]
 
     async def get_project(self, project_id):
