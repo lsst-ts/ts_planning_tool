@@ -32,6 +32,7 @@ import os
 import aiohttp
 from aiohttp import BasicAuth
 
+
 # Your JIRA Cloud base URL
 ZEPHYR_BASE_URL = "https://api.zephyrscale.smartbear.com/v2/"
 JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"
@@ -96,6 +97,8 @@ class ZephyrInterface:
             if log is None
             else log.getChild(type(self).__name__)
         )
+
+        self.test_cycle = TestCycle(self)
 
     @staticmethod
     def extract_test_case_from_test_execution(test_execution_json):
@@ -535,6 +538,105 @@ class ZephyrInterface:
         return statuses
 
 
+class TestCycle:
+    """
+    Direct interface to the Zephyr Scale API for test cycle management.
+
+    Parameters
+    ----------
+    zapi : ZephyrInterface
+        An instance of the ZephyrInterface class.
+    """
+
+    def __init__(self, zapi):
+        self.zapi = zapi
+
+    async def get_list_of_cycles(
+        self, extra_keys=None, max_results=20, start_at=0, project_key="BLOCK"
+    ):
+        """
+        Get a list of test cycles where each test cycle is represented by a
+        dictionary containing the test cycle `id` and `key`. `id` is an integer
+        containing an unique identifier for the test cycle, and `key` is a
+        string with the `{PROJECT_KEY}-R{CYCLE_NUMBER}`.
+        For example: BLOCK-R17.
+
+        If `extra_keys` is provided, the dictionary will also contain the
+        additional keys specified in the list.
+
+        Parameters
+        ----------
+        extra_keys : dict, optional
+            A dictionary containing the query parameters.
+        max_results : int, optional
+            The maximum number of test cycles to return. Default: 20
+        start_at : int, optional
+            The index of the first test cycle to return. The default is 0.
+            Should be a multiple of maxResults. Default: 0
+        project_key : str, optional
+            The key of the Jira project. The default is "BLOCK".
+
+        Returns
+        -------
+        dict
+            A dictionary containing the test cycles.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Cycles/operation/listTestCycles
+        """
+        # Check if start_at is a multiple of max_results
+        if start_at % max_results != 0:
+            raise ValueError("startAt must be a multiple of maxResults")
+
+        # Prepare the query
+        endpoint = "testcycles"
+        url = self.zapi.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+        query_parameters = {
+            "maxResults": max_results,
+            "startAt": start_at,
+            "projectKey": project_key,
+        }
+
+        # Perform the query
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(
+                url=url, headers=headers, params=query_parameters
+            ) as response:
+
+                if response.status == 200:
+                    test_cycles = await response.json()
+                    # We are only interested in the list of test cycles
+                    test_cycles = test_cycles["values"]
+                else:
+                    raise aiohttp.ClientError(
+                        f"Failed to query test cycles. Status code: {response.status}"
+                    )
+
+        # Check if the query keys are valid
+        query_keys = ["id", "key"]
+        if extra_keys is not None:
+            query_keys.extend(extra_keys)
+
+        for key in query_keys:
+            if key not in test_cycles[0].keys():
+                raise KeyError(
+                    f"Query parameter {key} is not a queriable parameter in test cycles."
+                )
+
+        # Prepare the output
+        outputs = []
+        for cycle in test_cycles:
+            outputs.append({key: cycle[key] for key in query_keys})
+
+        return outputs
+
+
 async def run_example():
 
     # Create a ZephyrInterface object
@@ -594,7 +696,7 @@ async def run_example():
 
     # Retrieve test cycles
     print("Querying many test cycles...")
-    test_cycles = await zephyr_interface.get_test_cycles(
+    test_cycles = await zephyr_interface.test_cycle.get_list_of_cycles(
         start_at=20, cycle_keys=["name"]
     )
     print("Got them. ")
