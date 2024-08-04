@@ -1,64 +1,216 @@
-# This file is part of ts_planning_tool.
-#
-# Developed for the LSST Data Management System.
-# This product includes software developed by the LSST Project
-# (https://www.lsst.org).
-# See the COPYRIGHT file at the top-level directory of this distribution
-# for details of code ownership.
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
-from lsst.ts.planning.tool.zephyr.zephyr_interface import ZephyrInterface
+from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
 
 
-class TestZephyrInterface(unittest.TestCase):
+def load_json_data(filename):
+    import json
+    import os
+
+    filepath = os.path.join(os.path.dirname(__file__), "data", filename)
+    with open(filepath, "r") as file:
+        return json.load(file)
+
+
+class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
+
     def setUp(self):
-        self.username = "test_user"
-        self.api_token = "test_token"
-        self.zephyr_interface = ZephyrInterface(self.username, self.api_token)
+        self.jira_api_token = "test_token"
+        self.jira_username = "test_username"
+        self.zephyr_api_token = "test_token"
+        self.zapi = ZephyrInterface(
+            jira_api_token=self.jira_api_token,
+            jira_username=self.jira_username,
+            zephyr_api_token=self.zephyr_api_token,
+        )
 
     def test_init(self):
-        self.assertEqual(self.zephyr_interface.username, self.username)
-        self.assertEqual(self.zephyr_interface.api_token, self.api_token)
+        self.assertEqual(self.zapi.jira_username, self.jira_username)
+        self.assertEqual(self.zapi.jira_api_token, self.jira_api_token)
+        self.assertEqual(self.zapi.zephyr_api_token, self.zephyr_api_token)
 
     @patch("aiohttp.ClientSession.get")
-    async def test_extract_test_case_from_test_execution(self, mock_get):
-        test_execution_json = {"key": "TEST-123", "status": "PASS"}
+    async def test_get_statuses(self, mock_get):
+
+        payload_expected_keys = [
+            "next",
+            "startAt",
+            "maxResults",
+            "total",
+            "isLast",
+            "values",
+        ]
+
         mock_response = MagicMock()
-        mock_response.json.return_value = test_execution_json
+        mock_response.json = AsyncMock(return_value=load_json_data("statuses.json"))
+
         mock_get.return_value.__aenter__.return_value = mock_response
 
-        test_case = await self.zephyr_interface.extract_test_case_from_test_execution(
-            test_execution_json
-        )
-        self.assertEqual(test_case, test_execution_json["key"])
+        statuses = await self.zapi.get_statuses()
+        self.assertListEqual(list(statuses.keys()), payload_expected_keys)
 
     @patch("aiohttp.ClientSession.get")
     async def test_get_test_case(self, mock_get):
-        test_case_key = "TEST-123"
-        test_case_json = {"key": test_case_key, "summary": "Test Case Summary"}
+
+        payload_expected_keys = [
+            "id",
+            "key",
+            "name",
+            "project",
+            "createdOn",
+            "objective",
+            "precondition",
+            "estimatedTime",
+            "labels",
+            "component",
+            "priority",
+            "status",
+            "folder",
+            "owner",
+            "testScript",
+            "customFields",
+            "links",
+        ]
+
         mock_response = MagicMock()
-        mock_response.json.return_value = test_case_json
+        mock_response.json = AsyncMock(return_value=load_json_data("test_case.json"))
+
         mock_get.return_value.__aenter__.return_value = mock_response
 
-        test_case = await self.zephyr_interface.get_test_case(test_case_key)
-        self.assertEqual(test_case, test_case_json)
+        test_case_key = "BLOCK-T21"
+        test_case = await self.zapi.get_test_case(test_case_key)
+        self.assertEqual(test_case["key"], test_case_key)
+        self.assertListEqual(list(test_case.keys()), payload_expected_keys)
 
-    # Add more test methods for other functions in ZephyrInterface class
+    @patch("aiohttp.ClientSession.get")
+    async def test_get_test_case_steps(self, mock_get):
+
+        payload_expected_keys = [
+            "next",
+            "startAt",
+            "maxResults",
+            "total",
+            "isLast",
+            "values",
+        ]
+
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(
+            return_value=load_json_data("test_case_steps.json")
+        )
+
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        test_case_key = "BLOCK-T21"
+        test_case_steps = await self.zapi.get_test_case_steps(test_case_key)
+        self.assertListEqual(list(test_case_steps.keys()), payload_expected_keys)
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_get_test_execution(self, mock_get):
+
+        payload_expected_keys = [
+            "id",
+            "key",
+            "project",
+            "testCase",
+            "environment",
+            "jiraProjectVersion",
+            "testExecutionStatus",
+            "actualEndDate",
+            "estimatedTime",
+            "executionTime",
+            "executedById",
+            "assignedToId",
+            "comment",
+            "automated",
+            "testCycle",
+            "customFields",
+            "links",
+        ]
+
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(
+            return_value=load_json_data("test_execution.json")
+        )
+
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        test_execution_id = "BLOCK-E192"
+        test_execution = await self.zapi.get_test_execution(test_execution_id)
+        self.assertEqual(test_execution["key"], test_execution_id)
+        self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_get_test_executions(self, mock_get):
+
+        payload_expected_keys = [
+            "next",
+            "startAt",
+            "maxResults",
+            "total",
+            "isLast",
+            "values",
+        ]
+
+        values_expected_keys = [
+            "id",
+            "key",
+            "project",
+            "testCase",
+            "environment",
+            "jiraProjectVersion",
+            "testExecutionStatus",
+            "actualEndDate",
+            "estimatedTime",
+            "executionTime",
+            "executedById",
+            "assignedToId",
+            "comment",
+            "automated",
+            "testCycle",
+            "customFields",
+            "links",
+        ]
+
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(
+            return_value=load_json_data("test_executions.json")
+        )
+
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        test_cycle_key = "BLOCK-R21"
+        test_executions = await self.zapi.get_test_executions(test_cycle_key)
+        self.assertListEqual(list(test_executions.keys()), payload_expected_keys)
+        self.assertListEqual(
+            list(test_executions["values"][0].keys()), values_expected_keys
+        )
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_parse_project_from_id(self, mock_get):
+
+        project_key = "TEST"
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(return_value={"key": project_key})
+
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        project_id = 10000
+        project = await self.zapi.parse_project_from_id(project_id)
+        self.assertIsInstance(project, str)
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_parse_status_from_id(self, mock_get):
+        status_id = 10001
+        status_name = "In Progress"
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(return_value={"name": status_name})
+
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        status = await self.zapi.parse_status_from_id(status_id)
+        self.assertEqual(status, status_name)
 
 
 if __name__ == "__main__":

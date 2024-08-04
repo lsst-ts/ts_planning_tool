@@ -19,10 +19,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
 import os
-import pytest
 import unittest
 
+import pytest
 from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
 
 
@@ -158,6 +159,56 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
 
         self.assertEqual(test_case_name, expected_test_case_name)
         self.assertEqual(test_case_version, expected_test_case_version)
+
+    async def test_get_test_executions(self):
+
+        payload_expected_keys = [
+            "next",
+            "startAt",
+            "maxResults",
+            "total",
+            "isLast",
+            "values",
+        ]
+
+        values_expected_keys = [
+            "id",
+            "key",
+            "project",
+            "testCase",
+            "environment",
+            "jiraProjectVersion",
+            "testExecutionStatus",
+            "actualEndDate",
+            "estimatedTime",
+            "executionTime",
+            "executedById",
+            "assignedToId",
+            "comment",
+            "automated",
+            "testCycle",
+            "customFields",
+            "links",
+        ]
+
+        test_cycle_key = "BLOCK-R21"
+        test_executions = await self.zapi.get_test_executions(test_cycle_key)
+        self.assertListEqual(list(test_executions.keys()), payload_expected_keys)
+        self.assertListEqual(
+            list(test_executions["values"][0].keys()), values_expected_keys
+        )
+
+    async def test_parse_project_from_id(self):
+
+        project_id = 350001  # BLOCK project id
+        project = await self.zapi.parse_project_from_id(project_id)
+        self.assertEqual(project, "BLOCK")
+
+    async def test_parse_status_from_id(self):
+
+        status_id = 3940035  # Pass status id
+        status = await self.zapi.parse_status_from_id(status_id)
+        self.assertEqual(status, "Pass")
 
 
 if __name__ == "__main__":

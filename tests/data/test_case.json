@@ -1,0 +1,42 @@
+{
+    "id": 158630511,
+    "key": "BLOCK-T21",
+    "name": "Test Zephyr Scale interface with Python",
+    "project": {
+        "id": 350001,
+        "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+    },
+    "createdOn": "2024-05-17T16:56:13Z",
+    "objective": "Confirm that we can perform multiple operations using Python and Zephyr Scale.",
+    "precondition": null,
+    "estimatedTime": null,
+    "labels": [],
+    "component": null,
+    "priority": {
+        "id": 6360096,
+        "self": "https://api.zephyrscale.smartbear.com/v2/priorities/6360096"
+    },
+    "status": {
+        "id": 6360092,
+        "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360092"
+    },
+    "folder": null,
+    "owner": {
+        "self": "https://rubinobs.atlassian.net/rest/api/2/user?accountId=62753116e51c620070bfbcd1",
+        "accountId": "62753116e51c620070bfbcd1"
+    },
+    "testScript": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T21/teststeps"
+    },
+    "customFields": {
+        "End time available (UTC)": "",
+        "Time Critical": false,
+        "On Sky": false,
+        "Start time available (UTC)": ""
+    },
+    "links": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T21/links",
+        "issues": [],
+        "webLinks": []
+    }
+}

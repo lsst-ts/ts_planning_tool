@@ -1,7 +1,8 @@
 import os
-import pytest
 import unittest
+
 import aiohttp
+import pytest
 from aiohttp import BasicAuth
 
 JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"

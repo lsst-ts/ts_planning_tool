@@ -32,7 +32,6 @@ import os
 import aiohttp
 from aiohttp import BasicAuth
 
-
 # Your JIRA Cloud base URL
 ZEPHYR_BASE_URL = "https://api.zephyrscale.smartbear.com/v2/"
 JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"
@@ -183,9 +182,12 @@ class ZephyrInterface:
             "Content-Type": "application/json",
         }
         async with aiohttp.ClientSession(raise_for_status=True) as session:
-            response = await session.get(url, headers=headers)
-            steps = await response.json()
-            return steps
+            async with session.get(url=url, headers=headers) as response:
+                steps = await response.json()
+                self.log.debug(
+                    "Querying steps in test case {test_case_key}. Got response: {steps=}"
+                )
+                return steps
 
     async def get_test_cycle(self, test_cycle_key):
         """
@@ -371,10 +373,10 @@ class ZephyrInterface:
 
         return user_details["displayName"]
 
-    async def get_project(self, project_id):
+    async def parse_project_from_id(self, project_id: int) -> str:
         """
-        Query the project based on a JSON object containing "self" and
-        "id" keys.
+        Query the Jira project key (e.g. BLOCK, OBS, SITCOM) from the Zephyr 
+        Scale database based the project's ID. 
 
         Parameters
         ----------
@@ -383,15 +385,15 @@ class ZephyrInterface:
 
         Returns
         -------
-        dict
-            A dictionary containing the details of the project.
+        str
+            The project key.
 
         See also
         --------
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Projects/operation/getProject
         """
-        endpoint = f"projects/{project_id}"
+        endpoint = f"projects/{project_id:d}"
         url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.zephyr_api_token}",
@@ -403,9 +405,10 @@ class ZephyrInterface:
 
         return project["key"]
 
-    async def get_status(self, status_id):
+    async def parse_status_from_id(self, status_id: int) -> str:
         """
-        Get the details of a status.
+        Get the name of a status from the Zephyr Scale database based on its 
+        ID number. 
 
         Parameters
         ----------

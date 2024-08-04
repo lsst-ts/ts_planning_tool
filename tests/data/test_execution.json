@@ -1,0 +1,37 @@
+{
+    "id": 902085710,
+    "key": "BLOCK-E192",
+    "project": {
+        "id": 350001,
+        "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+    },
+    "testCase": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T21/versions/1",
+        "id": 158630511
+    },
+    "environment": {
+        "id": 6824992,
+        "self": "https://api.zephyrscale.smartbear.com/v2/environments/6824992"
+    },
+    "jiraProjectVersion": null,
+    "testExecutionStatus": {
+        "id": 6360083,
+        "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360083"
+    },
+    "actualEndDate": "2024-05-17T18:07:07Z",
+    "estimatedTime": null,
+    "executionTime": null,
+    "executedById": "62753116e51c620070bfbcd1",
+    "assignedToId": "62753116e51c620070bfbcd1",
+    "comment": null,
+    "automated": false,
+    "testCycle": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22158897",
+        "id": 22158897
+    },
+    "customFields": {},
+    "links": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/902085710/links",
+        "issues": []
+    }
+}
