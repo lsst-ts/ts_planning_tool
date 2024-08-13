@@ -32,6 +32,14 @@
     "customFields": {},
     "links": {
         "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/902085710/links",
-        "issues": []
+        "issues": [
+            {
+                "self": "https://api.zephyrscale.smartbear.com/v2/links/95535911",
+                "issueId": 211993,
+                "id": 95535911,
+                "target": "https://rubinobs.atlassian.net/rest/api/2/issue/211993",
+                "type": "BLOCKS"
+            }
+        ]
     }
 }

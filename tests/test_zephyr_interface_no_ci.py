@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import json
 import os
 import unittest
 
@@ -197,6 +196,12 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertListEqual(
             list(test_executions["values"][0].keys()), values_expected_keys
         )
+
+    async def test_parse_environment_from_id(self):
+
+        environment_id = 6824992  # Daytime environment id for '1. Daytime'
+        environment = await self.zapi.parse_environment_from_id(environment_id)
+        self.assertEqual(environment, "1. Daytime")
 
     async def test_parse_project_from_id(self):
 

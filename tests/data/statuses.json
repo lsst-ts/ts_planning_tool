@@ -1,0 +1,269 @@
+{
+    "next": "https://api.zephyrscale.smartbear.com/v2/statuses?startAt=20&maxResults=20",
+    "startAt": 0,
+    "maxResults": 20,
+    "total": 476,
+    "isLast": false,
+    "values": [
+        {
+            "id": 3940033,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Not Executed",
+            "description": "",
+            "index": 0,
+            "color": "#cfcfc4",
+            "archived": false,
+            "default": true
+        },
+        {
+            "id": 3940034,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "In Progress",
+            "description": "",
+            "index": 1,
+            "color": "#f0ad4e",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940035,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Pass",
+            "description": "",
+            "index": 2,
+            "color": "#3abb4b",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940036,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Fail",
+            "description": "",
+            "index": 3,
+            "color": "#df2f36",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940037,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Blocked",
+            "description": "",
+            "index": 4,
+            "color": "#4b88e7",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940044,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Not Executed",
+            "description": "",
+            "index": 0,
+            "color": "#cfcfc4",
+            "archived": false,
+            "default": true
+        },
+        {
+            "id": 3940045,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "In Progress",
+            "description": "",
+            "index": 1,
+            "color": "#f0ad4e",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940046,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Done",
+            "description": "",
+            "index": 2,
+            "color": "#3abb4b",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940041,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Draft",
+            "description": "",
+            "index": 0,
+            "color": "#f0ad4e",
+            "archived": false,
+            "default": true
+        },
+        {
+            "id": 3940042,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Deprecated",
+            "description": "",
+            "index": 1,
+            "color": "#4b88e7",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940043,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Approved",
+            "description": "",
+            "index": 2,
+            "color": "#3abb4b",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940038,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Draft",
+            "description": "",
+            "index": 0,
+            "color": "#f0ad4e",
+            "archived": false,
+            "default": true
+        },
+        {
+            "id": 3940039,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Deprecated",
+            "description": "",
+            "index": 1,
+            "color": "#4b88e7",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940040,
+            "project": {
+                "id": 216473,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216473"
+            },
+            "name": "Approved",
+            "description": "",
+            "index": 2,
+            "color": "#3abb4b",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940155,
+            "project": {
+                "id": 216480,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216480"
+            },
+            "name": "Not Executed",
+            "description": "",
+            "index": 0,
+            "color": "#cfcfc4",
+            "archived": false,
+            "default": true
+        },
+        {
+            "id": 3940156,
+            "project": {
+                "id": 216480,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216480"
+            },
+            "name": "In Progress",
+            "description": "",
+            "index": 1,
+            "color": "#f0ad4e",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940157,
+            "project": {
+                "id": 216480,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216480"
+            },
+            "name": "Pass",
+            "description": "",
+            "index": 2,
+            "color": "#3abb4b",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940158,
+            "project": {
+                "id": 216480,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216480"
+            },
+            "name": "Fail",
+            "description": "",
+            "index": 3,
+            "color": "#df2f36",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940159,
+            "project": {
+                "id": 216480,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216480"
+            },
+            "name": "Blocked",
+            "description": "",
+            "index": 4,
+            "color": "#4b88e7",
+            "archived": false,
+            "default": false
+        },
+        {
+            "id": 3940166,
+            "project": {
+                "id": 216480,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/216480"
+            },
+            "name": "Not Executed",
+            "description": "",
+            "index": 0,
+            "color": "#cfcfc4",
+            "archived": false,
+            "default": true
+        }
+    ]
+}

@@ -188,6 +188,18 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         )
 
     @patch("aiohttp.ClientSession.get")
+    async def test_parse_environment_from_id(self, mock_get):
+        environment_id = 20001
+        environment_name = "Production"
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(return_value={"name": environment_name})
+
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        environment = await self.zapi.parse_environment_from_id(environment_id)
+        self.assertEqual(environment, environment_name)
+
+    @patch("aiohttp.ClientSession.get")
     async def test_parse_project_from_id(self, mock_get):
 
         project_key = "TEST"

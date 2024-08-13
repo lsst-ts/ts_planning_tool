@@ -121,6 +121,36 @@ class ZephyrInterface:
         test_case_version = url.split("/")[-1]
         return test_case_name, test_case_version
 
+    async def get_statuses(self, status_type=None, max_results=20):
+        """
+        Get all the available statuses in Zephyr Scale.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the available statuses.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Statuses/operation/listStatuses
+        """
+        endpoint = "statuses"
+        url = self.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+
+        params = {"maxResults": max_results}
+        if status_type in ["TEST_CASE", "TEST_PLAN", "TEST_CYCLE", "TEST_EXECUTION"]:
+            params["statusType"] = status_type
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(url, headers=headers, params=params) as response:
+                statuses = await response.json()
+        return statuses
+
     async def get_test_case(self, test_case_key):
         """
         Get the details of a test case.
@@ -373,10 +403,42 @@ class ZephyrInterface:
 
         return user_details["displayName"]
 
+    async def parse_environment_from_id(self, environment_id: int) -> str:
+        """
+        Query the Zephyr Scale database to get the environment name based on
+        its ID.
+
+        Parameters
+        ----------
+        environment_id : int
+            The ID of the environment.
+
+        Returns
+        -------
+        str
+            The environment name.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Environments/operation/getEnvironment
+        """
+        endpoint = f"environments/{environment_id:d}"
+        url = self.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(url, headers=headers) as response:
+                environment = await response.json()
+
+        return environment["name"]
+
     async def parse_project_from_id(self, project_id: int) -> str:
         """
-        Query the Jira project key (e.g. BLOCK, OBS, SITCOM) from the Zephyr 
-        Scale database based the project's ID. 
+        Query the Jira project key (e.g. BLOCK, OBS, SITCOM) from the Zephyr
+        Scale database based the project's ID.
 
         Parameters
         ----------
@@ -407,8 +469,8 @@ class ZephyrInterface:
 
     async def parse_status_from_id(self, status_id: int) -> str:
         """
-        Get the name of a status from the Zephyr Scale database based on its 
-        ID number. 
+        Get the name of a status from the Zephyr Scale database based on its
+        ID number.
 
         Parameters
         ----------
@@ -437,35 +499,71 @@ class ZephyrInterface:
 
         return status["name"]
 
-    async def get_statuses(self, status_type=None, max_results=20):
+    async def parse_test_case_from_id(
+        self, test_case_id: int, versions: int = 1
+    ) -> str:
         """
-        Get all the available statuses in Zephyr Scale.
+        Query the Zephyr Scale database to get the test case key based on its
+        ID.
+
+        Parameters
+        ----------
+        test_case_id : int
+            The ID of the test case.
 
         Returns
         -------
-        dict
-            A dictionary containing the available statuses.
+        str
+            The test case key.
 
         See also
         --------
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Statuses/operation/listStatuses
+                #tag/Test-Cases/operation/getTestCase
         """
-        endpoint = "statuses"
+        endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
         url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.zephyr_api_token}",
             "Content-Type": "application/json",
         }
-
-        params = {"maxResults": max_results}
-        if status_type in ["TEST_CASE", "TEST_PLAN", "TEST_CYCLE", "TEST_EXECUTION"]:
-            params["statusType"] = status_type
-
         async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url, headers=headers, params=params) as response:
-                statuses = await response.json()
-        return statuses
+            async with session.get(url, headers=headers) as response:
+                test_case = await response.json()
+
+        return test_case["key"]
+
+    async def parse_test_cycle_from_id(self, test_cycle_id: int) -> str:
+        """
+        Query the Zephyr Scale database to get the test cycle key based on its
+        ID.
+
+        Parameters
+        ----------
+        test_cycle_id : int
+            The ID of the test cycle.
+
+        Returns
+        -------
+        str
+            The test cycle key.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Cycles/operation/getTestCycle
+        """
+        endpoint = f"testcycles/{test_cycle_id:d}"
+        url = self.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(url, headers=headers) as response:
+                test_cycle = await response.json()
+
+        return test_cycle["key"]
 
 
 class TestCycle:
