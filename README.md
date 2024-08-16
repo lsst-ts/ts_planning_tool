@@ -1,7 +1,7 @@
 # ts_planning_tool
 
 This package provides tools to be used by LOVE as part of the LOVE Player dashboard.
-LOVE Player is an user interface inside LOVE that mimics the Zephyr Scale Test Player, with potention to add extra funcionality.
+LOVE Player is an user interface inside LOVE that mimics the Zephyr Scale Test Player, with potential to add extra funcionality.
 Since LOVE Player lives inside LOVE, it can interact with the Script Queue to add/remove SAL scripts. 
 At the same time, it can potentially save information in Zephyr Scale and send messages to the Observatory Logging Environment (OLE).
 

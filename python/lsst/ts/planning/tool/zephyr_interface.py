@@ -124,61 +124,12 @@ class ZephyrInterface:
                 #tag/Statuses/operation/listStatuses
         """
         endpoint = "statuses"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-
         params = {"maxResults": max_results}
+
         if status_type in ["TEST_CASE", "TEST_PLAN", "TEST_CYCLE", "TEST_EXECUTION"]:
             params["statusType"] = status_type
 
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url, headers=headers, params=params) as response:
-                statuses = await response.json()
-        return statuses
-
-    async def get_test_case(self, test_case_key, raw=False):
-        """
-        Get the details of a test case.
-
-        Parameters
-        ----------
-        test_case_key : str
-            The key of the test case.
-        raw : bool
-            If True, return the raw JSON response.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the details of the test case.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Test-Cases/operation/getTestCase
-        """
-        endpoint = f"testcases/{test_case_key}"
-        self.log.debug(f"Querying test case {test_case_key}, raw = {raw}")
-        test_case = await self.get(endpoint)
-
-        if not raw:
-            test_case["project"] = await self.parse_project_from_id(
-                test_case["project"]["id"]
-            )
-            test_case["priority"] = await self.parse_priority_from_id(
-                test_case["priority"]["id"]
-            )
-            test_case["status"] = await self.parse_status_from_id(
-                test_case["status"]["id"]
-            )
-            test_case["owner"] = await self.get_user_name(
-                test_case["owner"]["accountId"]
-            )
-
-        return test_case
+        return await self.get(endpoint, params)
 
     async def get_steps_in_test_case(self, test_case_key):
         """
@@ -202,10 +153,65 @@ class ZephyrInterface:
                 #tag/Test-Cases/operation/getTestCaseTestSteps
         """
         endpoint = f"testcases/{test_case_key}/teststeps"
-        self.log.debug(f"Querying steps in test case {test_case_key}")
+        self.log.info(f"Querying steps in test case {test_case_key}")
         return await self.get(endpoint)
 
-    async def get_test_cycle(self, test_cycle_key, raw=False):
+    async def get_test_case(self, test_case_key, parse="raw"):
+        """
+        Get the details of a test case.
+
+        Parameters
+        ----------
+        test_case_key : str
+            The key of the test case.
+        parse : string, optional
+            The type of parsing to perform. The default is "raw", and it will
+            return the payload as it is received. The "raw" option saves one
+            extra GET query to Zephyr Scale.
+
+            The other options are "full" and "simple". "full" will parse all
+            the fields in the test cycle and keep existing values.
+            "simple" will strip out existing values and only keep the parsed
+            values.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the details of the test case.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Cases/operation/getTestCase
+        """
+        endpoint = f"testcases/{test_case_key}"
+        self.log.info(f"Querying test case {test_case_key}, parse = {parse}")
+        test_case = await self.get(endpoint)
+
+        if parse == "raw":
+            return test_case
+
+        parse_fields = {
+            "project": "key",
+            "priority": "name",
+            "status": "name",
+        }
+
+        for key, val in parse_fields.items():
+            test_case[key] = await self.parse(test_case[key])
+            if test_case[key] and parse == "simple":
+                test_case[key] = test_case[key][val]
+
+        parse_users = {
+            "owner": ["accountId", "displayName"],
+        }
+
+        for key, val in parse_users.items():
+            test_case[key][val] = await self.get_user_name(test_case[key][val])
+
+        return test_case
+
+    async def get_test_cycle(self, test_cycle_key, parse="raw"):
         """
         Get the details of a test cycle.
 
@@ -213,8 +219,11 @@ class ZephyrInterface:
         ----------
         test_cycle_key : str
             The key of the test cycle.
-        raw : bool, optional
-            If True, return the raw JSON response. Default is False.
+        parse : string, optional
+            The type of parsing to perform. The default is "raw". The other
+            options are "full" and "simple". "full" will parse all the fields
+            in the test cycle and keep existing values. "simple" will strip out
+            existing values and only keep the parsed values.
 
         Returns
         -------
@@ -228,16 +237,24 @@ class ZephyrInterface:
         """
         endpoint = f"testcycles/{test_cycle_key}"
         self.log.debug(f"Querying test cycle {test_cycle_key}")
-        values = await self.get(endpoint)
+        test_cycle = await self.get(endpoint)
 
-        if raw:
-            return values
+        if parse == "raw":
+            return test_cycle
 
-        values["project"] = await self.parse_project_from_id(values["project"]["id"])
-        values["status"] = await self.parse_status_from_id(values["status"]["id"])
-        values["owner"] = await self.get_user_name(values["owner"]["accountId"])
+        parse_fields = {
+            "project": "key",
+            "status": "name",
+        }
 
-        return values
+        for key, val in parse_fields.items():
+            test_cycle[key] = await self.parse(test_cycle[key], parse_key=val)
+            if test_cycle[key] and parse == "simple":
+                test_cycle[key] = test_cycle[key][val]
+
+        # test_cycle["owner"] = await self.get_user_name(test_cycle["owner"]["accountId"])
+
+        return test_cycle
 
     async def get_test_cycles(
         self, cycle_keys=None, max_results=20, start_at=0, project_key="BLOCK"
@@ -448,180 +465,31 @@ class ZephyrInterface:
     async def parse(self, json_obj):
         """
         Generic method to parse get requests to the Zephyr Scale API.
+
+        Parameters
+        ----------
+        json_obj : dict
+            The JSON object to parse.
+        parse_key : str, optional
+            The key to parse. The default is None. If not None, the method will
+            provide a single value instead of the entire JSON object.
+
+        Returns
+        -------
+        dict or str or None
+            If the JSON object is None, the method will return None.
+            Otherwise, it will return a dictionary containing the parsed JSON.
+            If parse_key is not None, the method will return a string with the
+            value extracted from the JSON response.
         """
         if json_obj is None:
+            self.log.warn("Received json_obj as None. Returning None.")
             return None
 
-        url = json_obj["self"].replace(self.zephyr_base_url, "")
-        response = await self.get(url)
-
-        return json_obj | response
-
-    async def parse_environment(self, environment) -> str:
-        """
-        Query the Zephyr Scale database to get the environment name based on
-        its ID.
-
-        Parameters
-        ----------
-        environment : dict or int
-            They payload associated with the enfironment or the ID of the 
-            environment.
-
-        Returns
-        -------
-        str
-            The environment name.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Environments/operation/getEnvironment
-        """
-        if isinstance(environment, int):
-            environment_id = environment
-        elif isinstance(environment, dict):
-            environment_id = environment["id"]
+        if self.zephyr_base_url in json_obj["self"]:
+            endpoint = json_obj["self"].replace(self.zephyr_base_url, "")
         else:
-            return None
+            endpoint = json_obj["self"]
 
-        endpoint = f"environments/{environment_id:d}"
-        self.log.debug(f"Querying environment {environment_id}")
-        environment = await self.get(endpoint)
-        return environment["name"]
-
-    async def parse_priority_from_id(self, priority_id: int) -> str:
-        """
-        Query the Zephyr Scale database to get the priority name based on its
-        ID.
-
-        Parameters
-        ----------
-        priority_id : int
-            The ID of the priority.
-
-        Returns
-        -------
-        str
-            The priority name.
-        """
-        endpoint = f"priorities/{priority_id:d}"
-        self.log.debug(f"Querying priority {priority_id}")
-        priority = await self.get(endpoint)
-        return priority["name"]
-
-    async def parse_project_from_id(self, project_id: int) -> str:
-        """
-        Query the Jira project key (e.g. BLOCK, OBS, SITCOM) from the Zephyr
-        Scale database based the project's ID.
-
-        Parameters
-        ----------
-        project_id : int
-            And number representing the project ID.
-
-        Returns
-        -------
-        str
-            The project key.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Projects/operation/getProject
-        """
-        endpoint = f"projects/{project_id:d}"
-        self.log.debug(f"Querying project {project_id}")
-        project = await self.get(endpoint)
-        return project["key"]
-
-    async def parse_status_from_id(self, status_id: int) -> str:
-        """
-        Get the name of a status from the Zephyr Scale database based on its
-        ID number.
-
-        Parameters
-        ----------
-        status_id : int
-            The ID of the status.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the details of the status.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Statuses/operation/getStatus
-        """
-        endpoint = f"statuses/{status_id:d}"
-        self.log.debug(f"Querying status {status_id}")
-        status = await self.get(endpoint)
-        return status["name"]
-
-    async def parse_test_case_from_id(
-        self, test_case_id: int, versions: int = 1
-    ) -> str:
-        """
-        Query the Zephyr Scale database to get the test case key based on its
-        ID.
-
-        Parameters
-        ----------
-        test_case_id : int
-            The ID of the test case.
-
-        Returns
-        -------
-        str
-            The test case key.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Test-Cases/operation/getTestCase
-        """
-        endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
-        self.log.debug(f"Querying test case {test_case_id}")
-        test_case = await self.get(endpoint)
-        return await self.get(endpoint)["key"]
-        raise NotImplementedError(
-            "ZephyrScale does not suport parsing Test Cases from ID"
-        )
-        # endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
-        # url = self.zephyr_base_url + endpoint
-        # headers = {
-        #     "Authorization": f"Bearer {self.zephyr_api_token}",
-        #     "Content-Type": "application/json",
-        # }
-        # async with aiohttp.ClientSession(raise_for_status=True) as session:
-        #     async with session.get(url, headers=headers) as response:
-        #         test_case = await response.json()
-
-        # return test_case["key"]
-
-    async def parse_test_cycle_from_id(self, test_cycle_id: int) -> str:
-        """
-        Query the Zephyr Scale database to get the test cycle key based on its
-        ID.
-
-        Parameters
-        ----------
-        test_cycle_id : int
-            The ID of the test cycle.
-
-        Returns
-        -------
-        str
-            The test cycle key.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Test-Cycles/operation/getTestCycle
-        """
-        endpoint = f"testcycles/{test_cycle_id:d}"
-        self.log.debug(f"Querying test cycle {test_cycle_id}")
-        test_cycle = await self.get(endpoint)
-        return test_cycle["key"]
+        response = await self.get(endpoint)
+        return json_obj | response

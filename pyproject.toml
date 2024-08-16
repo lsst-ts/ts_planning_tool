@@ -19,11 +19,11 @@ write_to_template = """
 __all__ = ["__version__"]
 __version__ = "{version}"
 """
- 
+
 
 [tool.setuptools.dynamic]
 version = { attr = "setuptools_scm.get_version" }
- 
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 
