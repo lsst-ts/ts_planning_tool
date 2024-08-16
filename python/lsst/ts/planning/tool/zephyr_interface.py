@@ -93,28 +93,6 @@ class ZephyrInterface:
             else log.getChild(type(self).__name__)
         )
 
-    @staticmethod
-    def extract_test_case_from_test_execution(test_execution_json):
-        """
-        Extracts the test case name and version from the given test execution
-        JSON.
-
-        Parameters
-        ----------
-        test_execution_json : dict
-            The JSON object representing the test execution.
-
-        Returns
-        -------
-        tuple
-            A tuple containing the test case name and version extracted from
-            the test execution JSON.
-        """
-        url = test_execution_json.get("testCase").get("self")
-        test_case_name = url.split("/")[-3]
-        test_case_version = url.split("/")[-1]
-        return test_case_name, test_case_version
-
     async def get(self, endpoint, params=None):
         """
         Generic method to parse get requests to the Zephyr Scale API.
@@ -131,9 +109,9 @@ class ZephyrInterface:
 
         return payload
 
-    async def get_statuses(self, status_type=None, max_results=20):
+    async def get_list_of_statuses(self, status_type=None, max_results=20):
         """
-        Get all the available statuses in Zephyr Scale.
+        List all the available statuses in Zephyr Scale.
 
         Returns
         -------
@@ -332,7 +310,7 @@ class ZephyrInterface:
 
         return outputs
 
-    async def get_test_execution(self, test_execution_key):
+    async def get_test_execution(self, test_execution_key, raw=False):
         """
         Get the details of a test execution.
 
@@ -340,6 +318,8 @@ class ZephyrInterface:
         ----------
         test_execution_key : str
             The key of the test execution.
+        raw : bool, optional
+            If True, return the raw JSON response. Default is False.
 
         Returns
         -------
@@ -353,7 +333,29 @@ class ZephyrInterface:
         """
         endpoint = f"testexecutions/{test_execution_key}"
         self.log.debug(f"Querying test execution {test_execution_key}")
-        return await self.get(endpoint)
+        test_execution = await self.get(endpoint)
+
+        if raw:
+            return test_execution
+
+        parse_fields = {
+            "environment": "name",
+            "testCase": "key",
+            "testCycle": "key",
+            "testExecutionStatus": "name",
+            "project": "key",
+        }
+
+        for key, val in parse_fields.items():
+            test_execution[key] = await self.parse(test_execution[key])
+            if test_execution[key]:
+                test_execution[key] = test_execution[key][val]
+
+        users = ["executedById", "assignedToId"]
+        for user in users:
+            test_execution[user] = await self.get_user_name(test_execution[user])
+
+        return test_execution
 
     async def get_test_execution_steps(self, test_execution_key):
         """
@@ -443,15 +445,28 @@ class ZephyrInterface:
 
         return user_details["displayName"]
 
-    async def parse_environment_from_id(self, environment_id: int) -> str:
+    async def parse(self, json_obj):
+        """
+        Generic method to parse get requests to the Zephyr Scale API.
+        """
+        if json_obj is None:
+            return None
+
+        url = json_obj["self"].replace(self.zephyr_base_url, "")
+        response = await self.get(url)
+
+        return json_obj | response
+
+    async def parse_environment(self, environment) -> str:
         """
         Query the Zephyr Scale database to get the environment name based on
         its ID.
 
         Parameters
         ----------
-        environment_id : int
-            The ID of the environment.
+        environment : dict or int
+            They payload associated with the enfironment or the ID of the 
+            environment.
 
         Returns
         -------
@@ -463,6 +478,13 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Environments/operation/getEnvironment
         """
+        if isinstance(environment, int):
+            environment_id = environment
+        elif isinstance(environment, dict):
+            environment_id = environment["id"]
+        else:
+            return None
+
         endpoint = f"environments/{environment_id:d}"
         self.log.debug(f"Querying environment {environment_id}")
         environment = await self.get(endpoint)
@@ -562,6 +584,7 @@ class ZephyrInterface:
         """
         endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
         self.log.debug(f"Querying test case {test_case_id}")
+        test_case = await self.get(endpoint)
         return await self.get(endpoint)["key"]
         raise NotImplementedError(
             "ZephyrScale does not suport parsing Test Cases from ID"
@@ -600,4 +623,5 @@ class ZephyrInterface:
         """
         endpoint = f"testcycles/{test_cycle_id:d}"
         self.log.debug(f"Querying test cycle {test_cycle_id}")
-        return await self.get(endpoint)["key"]
+        test_cycle = await self.get(endpoint)
+        return test_cycle["key"]

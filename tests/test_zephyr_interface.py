@@ -31,7 +31,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.zapi.zephyr_api_token, self.zephyr_api_token)
 
     @patch("aiohttp.ClientSession.get")
-    async def test_get_statuses(self, mock_get):
+    async def test_get_list_of_statuses(self, mock_get):
 
         payload_expected_keys = [
             "next",
@@ -47,7 +47,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
 
         mock_get.return_value.__aenter__.return_value = mock_response
 
-        statuses = await self.zapi.get_statuses()
+        statuses = await self.zapi.get_list_of_statuses()
         self.assertListEqual(list(statuses.keys()), payload_expected_keys)
 
     @patch("aiohttp.ClientSession.get")
@@ -195,7 +195,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         mock_get.return_value.__aenter__.return_value = mock_response
 
         test_execution_id = "BLOCK-E192"
-        test_execution = await self.zapi.get_test_execution(test_execution_id)
+        test_execution = await self.zapi.get_test_execution(test_execution_id, raw=True)
         self.assertEqual(test_execution["key"], test_execution_id)
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
 
@@ -246,7 +246,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         )
 
     @patch("aiohttp.ClientSession.get")
-    async def test_parse_environment_from_id(self, mock_get):
+    async def test_parse_environment(self, mock_get):
         environment_id = 20001
         environment_name = "Production"
         mock_response = MagicMock()
@@ -254,7 +254,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
 
         mock_get.return_value.__aenter__.return_value = mock_response
 
-        environment = await self.zapi.parse_environment_from_id(environment_id)
+        environment = await self.zapi.parse_environment(environment_id)
         self.assertEqual(environment, environment_name)
 
     @patch("aiohttp.ClientSession.get")

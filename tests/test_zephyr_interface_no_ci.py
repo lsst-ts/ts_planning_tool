@@ -89,7 +89,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
             "values",
         ]
 
-        statuses = await self.zapi.get_statuses()
+        statuses = await self.zapi.get_list_of_statuses()
         self.assertListEqual(list(statuses.keys()), payload_expected_keys)
 
     @pytest.mark.asyncio
@@ -122,7 +122,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
 
     @pytest.mark.asyncio
     async def test_get_test_cycle(self):
-        
+
         payload_expected_keys = [
             "id",
             "key",
@@ -138,7 +138,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
             "customFields",
             "links",
         ]
-        
+
         test_cycle_key = "BLOCK-R21"
         test_cycle = await self.zapi.get_test_cycle(test_cycle_key)
         self.assertEqual(test_cycle["key"], test_cycle_key)
@@ -213,7 +213,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         ]
 
         test_execution_id = "BLOCK-E192"
-        test_execution = await self.zapi.get_test_execution(test_execution_id)
+        test_execution = await self.zapi.get_test_execution(test_execution_id, raw=True)
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
         self.assertEqual(test_execution["key"], test_execution_id)
 

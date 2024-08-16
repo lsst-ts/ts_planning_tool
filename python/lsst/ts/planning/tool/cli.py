@@ -44,6 +44,13 @@ async def get_test_cycle(test_cycle_key, raw=False, **kwargs):
     print(json.dumps(test_cycle, indent=2))
 
 
+async def get_test_execution(test_execution_key, raw=False, **kwargs):
+    """Get a test execution from Zephyr Scale API."""
+    zapi = setup_zephyr_interface()
+    test_execution = await zapi.get_test_execution(test_execution_key, raw=raw)
+    print(json.dumps(test_execution, indent=2))
+
+
 async def get_steps_in_test_case(test_case_key, **kwargs):
     """Get steps in a test case from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
@@ -78,6 +85,11 @@ def run_zapi_command_line():
     parse_test_cycle.add_argument("test_cycle_key", type=str)
     parse_test_cycle.add_argument("--raw", action="store_true")
     parse_test_cycle.set_defaults(func=get_test_cycle)
+
+    parse_test_execution = sub_parsers_get.add_parser("test_execution")
+    parse_test_execution.add_argument("test_execution_key", type=str)
+    parse_test_execution.add_argument("--raw", action="store_true")
+    parse_test_execution.set_defaults(func=get_test_execution)
 
     parse_test_steps = sub_parsers_get.add_parser("steps")
     parse_test_steps.add_argument("test_case_key", type=str)
