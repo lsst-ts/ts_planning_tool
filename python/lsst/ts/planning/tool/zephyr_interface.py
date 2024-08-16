@@ -115,6 +115,22 @@ class ZephyrInterface:
         test_case_version = url.split("/")[-1]
         return test_case_name, test_case_version
 
+    async def get(self, endpoint, params=None):
+        """
+        Generic method to parse get requests to the Zephyr Scale API.
+        """
+        url = self.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(url, headers=headers, params=params) as response:
+                payload = await response.json()
+
+        return payload
+
     async def get_statuses(self, status_type=None, max_results=20):
         """
         Get all the available statuses in Zephyr Scale.
@@ -165,20 +181,8 @@ class ZephyrInterface:
                 #tag/Test-Cases/operation/getTestCase
         """
         endpoint = f"testcases/{test_case_key}"
-        url = self.zephyr_base_url + endpoint
-
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url=url, headers=headers) as response:
-                values: dict = await response.json()
-                self.log.debug(
-                    f"Querying test case {test_case_key}. Got response: {values=}"
-                )
-                return values
+        self.log.debug(f"Querying test case {test_case_key}")
+        return await self.get(endpoint)
 
     async def get_test_case_steps(self, test_case_key):
         """
@@ -200,18 +204,8 @@ class ZephyrInterface:
                 #tag/Test-Cases/operation/getTestCaseTestSteps
         """
         endpoint = f"testcases/{test_case_key}/teststeps"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url=url, headers=headers) as response:
-                steps = await response.json()
-                self.log.debug(
-                    "Querying steps in test case {test_case_key}. Got response: {steps=}"
-                )
-                return steps
+        self.log.debug(f"Querying steps in test case {test_case_key}")
+        return await self.get(endpoint)
 
     async def get_test_cycle(self, test_cycle_key):
         """
@@ -233,15 +227,8 @@ class ZephyrInterface:
                 #tag/Test-Cycles/operation/getTestCycle
         """
         endpoint = f"testcycles/{test_cycle_key}"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url=url, headers=headers) as response:
-                values: dict = await response.json()
-                self.log.debug(f"Queried test cycle {test_cycle_key} successfully.")
+        self.log.debug(f"Querying test cycle {test_cycle_key}")
+        values = await self.get(endpoint)
 
         # # TODO - Parse values from IDs
         # values["project"] = \
@@ -344,18 +331,8 @@ class ZephyrInterface:
                 #tag/Test-Executions/operation/getTestExecution
         """
         endpoint = f"testexecutions/{test_execution_key}"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url=url, headers=headers) as response:
-                values: dict = await response.json()
-                self.log.debug(
-                    f"Querying test execution {test_execution_key}. Got response: {values=}"
-                )
-                return values
+        self.log.debug(f"Querying test execution {test_execution_key}")
+        return await self.get(endpoint)
 
     async def get_test_execution_steps(self, test_execution_key):
         """
@@ -377,18 +354,8 @@ class ZephyrInterface:
                 #tag/Test-Executions/operation/getTestExecutionTestSteps
         """
         endpoint = f"testexecutions/{test_execution_key}/teststeps"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url=url, headers=headers) as response:
-                values: dict = await response.json()
-                self.log.debug(
-                    f"Querying steps in test execution {test_execution_key}. Got response: {values=}"
-                )
-                return values
+        self.log.debug(f"Querying steps in test execution {test_execution_key}")
+        return await self.get(endpoint)
 
     async def get_test_executions(self, test_cycle_key, max_results=20):
         """
@@ -412,26 +379,11 @@ class ZephyrInterface:
                 #tag/Test-Executions/operation/getTestExecutions
         """
         endpoint = "testexecutions"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        query_parameters = {
+        params = {
             "testCycle": test_cycle_key,
             "maxResults": max_results,
         }
-
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(
-                url=url, headers=headers, params=query_parameters
-            ) as response:
-                values: list[dict] = await response.json()
-                self.log.debug(
-                    f"Querying test executions in test cycle {test_cycle_key}. Got response: {values=}"
-                )
-
-        return values
+        return await self.get(endpoint, params)
 
     async def get_user_name(self, account_id):
         """
@@ -491,15 +443,8 @@ class ZephyrInterface:
                 #tag/Environments/operation/getEnvironment
         """
         endpoint = f"environments/{environment_id:d}"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url, headers=headers) as response:
-                environment = await response.json()
-
+        self.log.debug(f"Querying environment {environment_id}")
+        environment = await self.get(endpoint)
         return environment["name"]
 
     async def parse_project_from_id(self, project_id: int) -> str:
@@ -523,15 +468,8 @@ class ZephyrInterface:
                 #tag/Projects/operation/getProject
         """
         endpoint = f"projects/{project_id:d}"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url, headers=headers) as response:
-                project = await response.json()
-
+        self.log.debug(f"Querying project {project_id}")
+        project = await self.get(endpoint)
         return project["key"]
 
     async def parse_status_from_id(self, status_id: int) -> str:
@@ -555,15 +493,8 @@ class ZephyrInterface:
                 #tag/Statuses/operation/getStatus
         """
         endpoint = f"statuses/{status_id:d}"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url=url, headers=headers) as response:
-                status = await response.json()
-
+        self.log.debug(f"Querying status {status_id}")
+        status = await self.get(endpoint)
         return status["name"]
 
     async def parse_test_case_from_id(
@@ -588,6 +519,9 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Cases/operation/getTestCase
         """
+        endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
+        self.log.debug(f"Querying test case {test_case_id}")
+        return await self.get(endpoint)["key"]
         raise NotImplementedError(
             "ZephyrScale does not suport parsing Test Cases from ID"
         )
@@ -624,13 +558,5 @@ class ZephyrInterface:
                 #tag/Test-Cycles/operation/getTestCycle
         """
         endpoint = f"testcycles/{test_cycle_id:d}"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url, headers=headers) as response:
-                test_cycle = await response.json()
-
-        return test_cycle["key"]
+        self.log.debug(f"Querying test cycle {test_cycle_id}")
+        return await self.get(endpoint)["key"]
