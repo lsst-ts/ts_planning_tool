@@ -35,13 +35,22 @@ async def get_test_case(test_case_key, raw=False, **kwargs):
     zapi = setup_zephyr_interface()
     test_case = await zapi.get_test_case(test_case_key, raw=raw)
     print(json.dumps(test_case, indent=2))
-    
+
+
+async def get_test_cycle(test_cycle_key, raw=False, **kwargs):
+    """Get a test cycle from Zephyr Scale API."""
+    zapi = setup_zephyr_interface()
+    test_cycle = await zapi.get_test_cycle(test_cycle_key, raw=raw)
+    print(json.dumps(test_cycle, indent=2))
+
+
 async def get_steps_in_test_case(test_case_key, **kwargs):
     """Get steps in a test case from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
     test_steps = await zapi.get_steps_in_test_case(test_case_key)
     print(json.dumps(test_steps, indent=2))
-    
+
+
 async def get_user(user_id, **kwargs):
     """Get the user name based on its Jira ID number."""
     zapi = setup_zephyr_interface()
@@ -54,19 +63,26 @@ def run_zapi_command_line():
 
     parser = argparse.ArgumentParser(description="Zephyr Scale API")
     sub_parsers = parser.add_subparsers()
+    sub_parsers.required = True
 
     parse_get = sub_parsers.add_parser("get")
     sub_parsers_get = parse_get.add_subparsers()
+    sub_parsers_get.required = True
 
     parse_test_case = sub_parsers_get.add_parser("test_case")
     parse_test_case.add_argument("test_case_key", type=str)
     parse_test_case.add_argument("--raw", action="store_true")
     parse_test_case.set_defaults(func=get_test_case)
-    
+
+    parse_test_cycle = sub_parsers_get.add_parser("test_cycle")
+    parse_test_cycle.add_argument("test_cycle_key", type=str)
+    parse_test_cycle.add_argument("--raw", action="store_true")
+    parse_test_cycle.set_defaults(func=get_test_cycle)
+
     parse_test_steps = sub_parsers_get.add_parser("steps")
     parse_test_steps.add_argument("test_case_key", type=str)
     parse_test_steps.set_defaults(func=get_steps_in_test_case)
-    
+
     parse_test_steps = sub_parsers_get.add_parser("user")
     parse_test_steps.add_argument("user_id", type=str)
     parse_test_steps.set_defaults(func=get_user)

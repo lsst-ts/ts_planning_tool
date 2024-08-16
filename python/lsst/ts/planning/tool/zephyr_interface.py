@@ -224,10 +224,10 @@ class ZephyrInterface:
                 #tag/Test-Cases/operation/getTestCaseTestSteps
         """
         endpoint = f"testcases/{test_case_key}/teststeps"
-        self.log.debug(f"Querying steps in test case {test_case_key}")            
+        self.log.debug(f"Querying steps in test case {test_case_key}")
         return await self.get(endpoint)
 
-    async def get_test_cycle(self, test_cycle_key):
+    async def get_test_cycle(self, test_cycle_key, raw=False):
         """
         Get the details of a test cycle.
 
@@ -235,6 +235,8 @@ class ZephyrInterface:
         ----------
         test_cycle_key : str
             The key of the test cycle.
+        raw : bool, optional
+            If True, return the raw JSON response. Default is False.
 
         Returns
         -------
@@ -250,13 +252,12 @@ class ZephyrInterface:
         self.log.debug(f"Querying test cycle {test_cycle_key}")
         values = await self.get(endpoint)
 
-        # # TODO - Parse values from IDs
-        # values["project"] = \
-        #     await self.parse_project_from_id(values["project"]["id"])
-        # values["status"] = \
-        #     await self.parse_status_from_id(values["status"]["id"])
-        # values["owner"] = \
-        #     await self.get_user_name(values["owner"]["accountId"])
+        if raw:
+            return values
+
+        values["project"] = await self.parse_project_from_id(values["project"]["id"])
+        values["status"] = await self.parse_status_from_id(values["status"]["id"])
+        values["owner"] = await self.get_user_name(values["owner"]["accountId"])
 
         return values
 
