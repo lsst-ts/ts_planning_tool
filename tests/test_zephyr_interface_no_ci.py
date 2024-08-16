@@ -134,7 +134,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         payload_value_keys = ["inline", "testCase"]
 
         test_case_key = "BLOCK-T21"
-        test_case_steps = await self.zapi.get_test_case_steps(test_case_key)
+        test_case_steps = await self.zapi.get_steps_in_test_case(test_case_key)
         self.assertListEqual(list(test_case_steps.keys()), payload_expected_keys)
         self.assertListEqual(
             list(test_case_steps["values"][0].keys()), payload_value_keys

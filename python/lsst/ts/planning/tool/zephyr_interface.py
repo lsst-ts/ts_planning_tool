@@ -202,7 +202,7 @@ class ZephyrInterface:
 
         return test_case
 
-    async def get_test_case_steps(self, test_case_key):
+    async def get_steps_in_test_case(self, test_case_key):
         """
         Get all the steps in a test case.
 
@@ -210,6 +210,8 @@ class ZephyrInterface:
         ----------
         test_case_key : str
             The key of the test case.
+        raw : bool
+            If True, return the raw JSON response.
 
         Returns
         -------
@@ -222,7 +224,7 @@ class ZephyrInterface:
                 #tag/Test-Cases/operation/getTestCaseTestSteps
         """
         endpoint = f"testcases/{test_case_key}/teststeps"
-        self.log.debug(f"Querying steps in test case {test_case_key}")
+        self.log.debug(f"Querying steps in test case {test_case_key}")            
         return await self.get(endpoint)
 
     async def get_test_cycle(self, test_cycle_key):
@@ -410,7 +412,7 @@ class ZephyrInterface:
 
         Parameters
         ----------
-        account_id : int
+        account_id : str
             The account ID of the user.
 
         Returns

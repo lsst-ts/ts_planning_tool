@@ -35,6 +35,18 @@ async def get_test_case(test_case_key, raw=False, **kwargs):
     zapi = setup_zephyr_interface()
     test_case = await zapi.get_test_case(test_case_key, raw=raw)
     print(json.dumps(test_case, indent=2))
+    
+async def get_steps_in_test_case(test_case_key, **kwargs):
+    """Get steps in a test case from Zephyr Scale API."""
+    zapi = setup_zephyr_interface()
+    test_steps = await zapi.get_steps_in_test_case(test_case_key)
+    print(json.dumps(test_steps, indent=2))
+    
+async def get_user(user_id, **kwargs):
+    """Get the user name based on its Jira ID number."""
+    zapi = setup_zephyr_interface()
+    user_name = await zapi.get_user_name(user_id)
+    print(json.dumps(user_name, indent=2))
 
 
 def run_zapi_command_line():
@@ -50,6 +62,14 @@ def run_zapi_command_line():
     parse_test_case.add_argument("test_case_key", type=str)
     parse_test_case.add_argument("--raw", action="store_true")
     parse_test_case.set_defaults(func=get_test_case)
+    
+    parse_test_steps = sub_parsers_get.add_parser("steps")
+    parse_test_steps.add_argument("test_case_key", type=str)
+    parse_test_steps.set_defaults(func=get_steps_in_test_case)
+    
+    parse_test_steps = sub_parsers_get.add_parser("user")
+    parse_test_steps.add_argument("user_id", type=str)
+    parse_test_steps.set_defaults(func=get_user)
 
     args = parser.parse_args()
     asyncio.run(args.func(**vars(args)))
