@@ -7,7 +7,7 @@ name = "ts_planning_tool"
 dynamic = ["version"]
 
 [project.scripts]
-run_zephyr_interface = "lsst.ts.planning.tool:run_zephyr_interface"
+zapi = "lsst.ts.planning.tool:run_zapi_command_line"
 
 [tool.setuptools.packages.find]
 where = ["python"]

@@ -161,7 +161,7 @@ class ZephyrInterface:
                 statuses = await response.json()
         return statuses
 
-    async def get_test_case(self, test_case_key):
+    async def get_test_case(self, test_case_key, raw=False):
         """
         Get the details of a test case.
 
@@ -169,6 +169,8 @@ class ZephyrInterface:
         ----------
         test_case_key : str
             The key of the test case.
+        raw : bool
+            If True, return the raw JSON response.
 
         Returns
         -------
@@ -181,8 +183,24 @@ class ZephyrInterface:
                 #tag/Test-Cases/operation/getTestCase
         """
         endpoint = f"testcases/{test_case_key}"
-        self.log.debug(f"Querying test case {test_case_key}")
-        return await self.get(endpoint)
+        self.log.debug(f"Querying test case {test_case_key}, raw = {raw}")
+        test_case = await self.get(endpoint)
+
+        if not raw:
+            test_case["project"] = await self.parse_project_from_id(
+                test_case["project"]["id"]
+            )
+            test_case["priority"] = await self.parse_priority_from_id(
+                test_case["priority"]["id"]
+            )
+            test_case["status"] = await self.parse_status_from_id(
+                test_case["status"]["id"]
+            )
+            test_case["owner"] = await self.get_user_name(
+                test_case["owner"]["accountId"]
+            )
+
+        return test_case
 
     async def get_test_case_steps(self, test_case_key):
         """
@@ -446,6 +464,26 @@ class ZephyrInterface:
         self.log.debug(f"Querying environment {environment_id}")
         environment = await self.get(endpoint)
         return environment["name"]
+
+    async def parse_priority_from_id(self, priority_id: int) -> str:
+        """
+        Query the Zephyr Scale database to get the priority name based on its
+        ID.
+
+        Parameters
+        ----------
+        priority_id : int
+            The ID of the priority.
+
+        Returns
+        -------
+        str
+            The priority name.
+        """
+        endpoint = f"priorities/{priority_id:d}"
+        self.log.debug(f"Querying priority {priority_id}")
+        priority = await self.get(endpoint)
+        return priority["name"]
 
     async def parse_project_from_id(self, project_id: int) -> str:
         """
