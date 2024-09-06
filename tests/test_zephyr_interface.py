@@ -224,6 +224,19 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         status = await self.zapi.parse_status_from_id(status_id)
         self.assertEqual(status, status_name)
 
+    @patch("aiohttp.ClientSession.get")
+    async def test_parse_test_cycle_from_id(self, mock_get):
+
+        test_cycle_id = 20001
+        test_cycle_name = "Cycle 1"
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(return_value={"key": test_cycle_name})
+
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        test_cycle = await self.zapi.parse_test_cycle_from_id(test_cycle_id)
+        self.assertEqual(test_cycle, test_cycle_name)
+
 
 if __name__ == "__main__":
     unittest.main()

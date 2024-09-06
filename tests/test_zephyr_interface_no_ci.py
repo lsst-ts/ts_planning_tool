@@ -26,6 +26,13 @@ import pytest
 from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
 
 
+# Real data from Zephyr
+ENVIRONMENT = {"id": 6824992, "name": "1. Daytime"}
+PROJECT = {"id": 350001, "name": "BLOCK"}
+STATUS = {"id": 3940035, "name": "Pass"}
+TEST_CYCLE = {"id": 22355742, "name": "BLOCK-R21"}
+
+
 @pytest.mark.skipif(
     "ZEPHYR_API_TOKEN" not in os.environ,
     reason="Skipping test because ZEPHYR_API_TOKEN is not defined",
@@ -99,6 +106,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(test_case["key"], test_case_key)
         self.assertListEqual(list(test_case.keys()), payload_expected_keys)
 
+    @pytest.mark.asyncio
     async def test_get_test_case_steps(self):
 
         payload_expected_keys = [
@@ -118,6 +126,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
             list(test_case_steps["values"][0].keys()), payload_value_keys
         )
 
+    @pytest.mark.asyncio
     async def test_get_test_execution(self):
 
         payload_expected_keys = [
@@ -145,6 +154,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
         self.assertEqual(test_execution["key"], test_execution_id)
 
+    @pytest.mark.asyncio
     async def test_extract_test_case_from_test_execution(self):
 
         expected_test_case_name = "BLOCK-T21"
@@ -159,6 +169,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(test_case_name, expected_test_case_name)
         self.assertEqual(test_case_version, expected_test_case_version)
 
+    @pytest.mark.asyncio
     async def test_get_test_executions(self):
 
         payload_expected_keys = [
@@ -197,23 +208,33 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
             list(test_executions["values"][0].keys()), values_expected_keys
         )
 
+    @pytest.mark.asyncio
     async def test_parse_environment_from_id(self):
 
-        environment_id = 6824992  # Daytime environment id for '1. Daytime'
+        environment_id = ENVIRONMENT["id"]
         environment = await self.zapi.parse_environment_from_id(environment_id)
-        self.assertEqual(environment, "1. Daytime")
+        self.assertEqual(environment, ENVIRONMENT["name"])
 
+    @pytest.mark.asyncio
     async def test_parse_project_from_id(self):
 
-        project_id = 350001  # BLOCK project id
+        project_id = PROJECT["id"]
         project = await self.zapi.parse_project_from_id(project_id)
-        self.assertEqual(project, "BLOCK")
+        self.assertEqual(project, PROJECT["name"])
 
+    @pytest.mark.asyncio
     async def test_parse_status_from_id(self):
 
-        status_id = 3940035  # Pass status id
+        status_id = STATUS["id"]
         status = await self.zapi.parse_status_from_id(status_id)
-        self.assertEqual(status, "Pass")
+        self.assertEqual(status, STATUS["name"])
+
+    @pytest.mark.asyncio
+    async def test_parse_test_cycle_from_id(self):
+
+        test_cycle_id = TEST_CYCLE["id"]
+        test_cycle = await self.zapi.parse_test_cycle_from_id(test_cycle_id)
+        self.assertEqual(test_cycle, TEST_CYCLE["name"])
 
 
 if __name__ == "__main__":
