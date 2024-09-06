@@ -25,7 +25,6 @@ import unittest
 import pytest
 from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
 
-
 # Real data from Zephyr
 ENVIRONMENT = {"id": 6824992, "name": "1. Daytime"}
 PROJECT = {"id": 350001, "name": "BLOCK"}
@@ -62,6 +61,21 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.zapi.jira_username, self.jira_username)
         self.assertEqual(self.zapi.jira_api_token, self.jira_api_token)
         self.assertEqual(self.zapi.zephyr_api_token, self.zephyr_api_token)
+
+    @pytest.mark.asyncio
+    async def test_extract_test_case_from_test_execution(self):
+
+        expected_test_case_name = "BLOCK-T21"
+        expected_test_case_version = "1"
+
+        test_execution_id = "BLOCK-E192"
+        test_execution = await self.zapi.get_test_execution(test_execution_id)
+        test_case_name, test_case_version = (
+            self.zapi.extract_test_case_from_test_execution(test_execution)
+        )
+
+        self.assertEqual(test_case_name, expected_test_case_name)
+        self.assertEqual(test_case_version, expected_test_case_version)
 
     @pytest.mark.asyncio
     async def test_get_statuses(self):
@@ -127,6 +141,30 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         )
 
     @pytest.mark.asyncio
+    async def test_get_test_cycle(self):
+
+        payload_expected_keys = [
+            "id",
+            "key",
+            "name",
+            "project",
+            "jiraProjectVersion",
+            "status",
+            "folder",
+            "description",
+            "plannedStartDate",
+            "plannedEndDate",
+            "owner",
+            "customFields",
+            "links",
+        ]
+
+        test_cycle_key = "BLOCK-R21"
+        test_cycle = await self.zapi.get_test_cycle(test_cycle_key)
+        self.assertEqual(test_cycle["key"], test_cycle_key)
+        self.assertListEqual(list(test_cycle.keys()), payload_expected_keys)
+
+    @pytest.mark.asyncio
     async def test_get_test_execution(self):
 
         payload_expected_keys = [
@@ -153,21 +191,6 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         test_execution = await self.zapi.get_test_execution(test_execution_id)
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
         self.assertEqual(test_execution["key"], test_execution_id)
-
-    @pytest.mark.asyncio
-    async def test_extract_test_case_from_test_execution(self):
-
-        expected_test_case_name = "BLOCK-T21"
-        expected_test_case_version = "1"
-
-        test_execution_id = "BLOCK-E192"
-        test_execution = await self.zapi.get_test_execution(test_execution_id)
-        test_case_name, test_case_version = (
-            self.zapi.extract_test_case_from_test_execution(test_execution)
-        )
-
-        self.assertEqual(test_case_name, expected_test_case_name)
-        self.assertEqual(test_case_version, expected_test_case_version)
 
     @pytest.mark.asyncio
     async def test_get_test_executions(self):

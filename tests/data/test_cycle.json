@@ -2,14 +2,23 @@
     "id": 22355742,
     "key": "BLOCK-R21",
     "name": "2024-05-29 Night Plan",
-    "project": "BLOCK",
+    "project": {
+        "id": 350001,
+        "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+    },
     "jiraProjectVersion": null,
-    "status": "Done",
+    "status": {
+        "id": 6360088,
+        "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360088"
+    },
     "folder": null,
     "description": "Primary focus for tonight will be Calibrations Rehearsal.<br />The expectation is that all the calibrations (standard and non-standard) should be completed before sunset.<br /><br />We know that AuxTel Pointing model has issues.<br />So the priority is to collect data on the calibration tests, other than going on Sky.<br /><br />This means that, even if you need to run calibration test cases overnight, do it.<br />Let's try to get data for BLOCK-T22 and BLOCK-T24.<br /><br />Run BLOCK-T23 only if there are no other options for the night (neither on Sky, nor closed dome). ",
     "plannedStartDate": "2024-05-29T07:00:00Z",
     "plannedEndDate": "2024-05-29T07:00:00Z",
-    "owner": "Bruno Quint",
+    "owner": {
+        "self": "https://rubinobs.atlassian.net/rest/api/2/user?accountId=62753116e51c620070bfbcd1",
+        "accountId": "62753116e51c620070bfbcd1"
+    },
     "customFields": {
         "Night Support": "Tiago Ribeiro",
         "End of Night - TMA El position": "",

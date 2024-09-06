@@ -107,6 +107,35 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         self.assertListEqual(list(test_case_steps.keys()), payload_expected_keys)
 
     @patch("aiohttp.ClientSession.get")
+    async def test_get_test_cycle(self, mock_get):
+
+        payload_expected_keys = [
+            "id",
+            "key",
+            "name",
+            "project",
+            "jiraProjectVersion",
+            "status",
+            "folder",
+            "description",
+            "plannedStartDate",
+            "plannedEndDate",
+            "owner",
+            "customFields",
+            "links",
+        ]
+
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(return_value=load_json_data("test_cycle.json"))
+
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        test_cycle_id = "BLOCK-R21"
+        test_cycle = await self.zapi.get_test_cycle(test_cycle_id)
+        self.assertEqual(test_cycle["key"], test_cycle_id)
+        self.assertListEqual(list(test_cycle.keys()), payload_expected_keys)
+
+    @patch("aiohttp.ClientSession.get")
     async def test_get_test_execution(self, mock_get):
 
         payload_expected_keys = [

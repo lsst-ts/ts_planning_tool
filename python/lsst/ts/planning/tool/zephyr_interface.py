@@ -241,40 +241,42 @@ class ZephyrInterface:
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.get(url=url, headers=headers) as response:
                 values: dict = await response.json()
-                self.log.debug(
-                    f"Querying test cycle {test_cycle_key}. Got response: {values=}"
-                )
+                self.log.debug(f"Queried test cycle {test_cycle_key} successfully.")
 
-        values["project"] = await self.get_project(values["project"]["id"])
-        values["status"] = await self.get_status(values["status"]["id"])
-        values["owner"] = await self.get_user_name(values["owner"]["accountId"])
+        # # TODO - Parse values from IDs
+        # values["project"] = \
+        #     await self.parse_project_from_id(values["project"]["id"])
+        # values["status"] = \
+        #     await self.parse_status_from_id(values["status"]["id"])
+        # values["owner"] = \
+        #     await self.get_user_name(values["owner"]["accountId"])
 
         return values
 
-        async def get_test_cycles(
-            self, cycle_keys=None, max_results=20, start_at=0, project_key="BLOCK"
-        ):
-            """
-        Get all the test cycles.
-        Parameters
-        ----------
-        cycle_keys : list, optional
-            A list containing the query parameters.
-        max_results : int, optional
-            The maximum number of test cycles to return. Default: 20
-        start_at : int, optional
-            The index of the first test cycle to return. The default is 0.
-            Should be a multiple of maxResults. Default: 0
-        project_key : str, optional
-            The key of the Jira project. The default is "BLOCK".
-        Returns
-        -------
-        dict
-            A dictionary containing the test cycles.
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Test-Cycles/operation/listTestCycles
+    async def get_test_cycles(
+        self, cycle_keys=None, max_results=20, start_at=0, project_key="BLOCK"
+    ):
+        """
+            Get all the test cycles.
+            Parameters
+            ----------
+            cycle_keys : list, optional
+                A list containing the query parameters.
+            max_results : int, optional
+                The maximum number of test cycles to return. Default: 20
+            start_at : int, optional
+                The index of the first test cycle to return. The default is 0.
+                Should be a multiple of maxResults. Default: 0
+            project_key : str, optional
+                The key of the Jira project. The default is "BLOCK".
+            Returns
+            -------
+            dict
+                A dictionary containing the test cycles.
+            See also
+            --------
+            * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                    #tag/Test-Cycles/operation/listTestCycles
         """
 
         # Check if start_at is a multiple of max_results
@@ -462,7 +464,7 @@ class ZephyrInterface:
             async with session.get(url, params=query_parameters) as response:
 
                 user_details = await response.json()
-                self.log.debug(
+                self.log.info(
                     f"Token is working fine. User display name: {user_details['displayName']}"
                 )
 
@@ -586,7 +588,9 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Cases/operation/getTestCase
         """
-        raise NotImplementedError("ZephyrScale does not suport parsing Test Cases from ID")
+        raise NotImplementedError(
+            "ZephyrScale does not suport parsing Test Cases from ID"
+        )
         # endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
         # url = self.zephyr_base_url + endpoint
         # headers = {
