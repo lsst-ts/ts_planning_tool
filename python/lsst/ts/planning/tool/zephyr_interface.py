@@ -586,17 +586,18 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Cases/operation/getTestCase
         """
-        endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
-        url = self.zephyr_base_url + endpoint
-        headers = {
-            "Authorization": f"Bearer {self.zephyr_api_token}",
-            "Content-Type": "application/json",
-        }
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url, headers=headers) as response:
-                test_case = await response.json()
+        raise NotImplementedError("ZephyrScale does not suport parsing Test Cases from ID")
+        # endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
+        # url = self.zephyr_base_url + endpoint
+        # headers = {
+        #     "Authorization": f"Bearer {self.zephyr_api_token}",
+        #     "Content-Type": "application/json",
+        # }
+        # async with aiohttp.ClientSession(raise_for_status=True) as session:
+        #     async with session.get(url, headers=headers) as response:
+        #         test_case = await response.json()
 
-        return test_case["key"]
+        # return test_case["key"]
 
     async def parse_test_cycle_from_id(self, test_cycle_id: int) -> str:
         """
