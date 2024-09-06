@@ -251,6 +251,77 @@ class ZephyrInterface:
 
         return values
 
+        async def get_test_cycles(
+            self, cycle_keys=None, max_results=20, start_at=0, project_key="BLOCK"
+        ):
+            """
+        Get all the test cycles.
+        Parameters
+        ----------
+        cycle_keys : list, optional
+            A list containing the query parameters.
+        max_results : int, optional
+            The maximum number of test cycles to return. Default: 20
+        start_at : int, optional
+            The index of the first test cycle to return. The default is 0.
+            Should be a multiple of maxResults. Default: 0
+        project_key : str, optional
+            The key of the Jira project. The default is "BLOCK".
+        Returns
+        -------
+        dict
+            A dictionary containing the test cycles.
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Cycles/operation/listTestCycles
+        """
+
+        # Check if start_at is a multiple of max_results
+        if start_at % max_results != 0:
+            raise ValueError("startAt must be a multiple of maxResults")
+
+        # Prepare the query
+        endpoint = "testcycles"
+        url = self.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+        query_parameters = {
+            "maxResults": max_results,
+            "startAt": start_at,
+            "projectKey": project_key,
+        }
+
+        # Perform the query
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(
+                url=url, headers=headers, params=query_parameters
+            ) as response:
+
+                test_cycles = await response.json()
+                # We are only interested in the list of test cycles
+                test_cycles = test_cycles["values"]
+
+        # Check if the query keys are valid
+        query_keys = ["id", "key"]
+        if cycle_keys is not None:
+            query_keys.extend(cycle_keys)
+
+        for key in query_keys:
+            if key not in test_cycles[0].keys():
+                raise KeyError(
+                    f"Query parameter {key} is not a queriable parameter in test cycles."
+                )
+
+        # Prepare the output
+        outputs = []
+        for cycle in test_cycles:
+            outputs.append({key: cycle[key] for key in query_keys})
+
+        return outputs
+
     async def get_test_execution(self, test_execution_key):
         """
         Get the details of a test execution.
