@@ -21,13 +21,9 @@
 
 __all__ = [
     "ZephyrInterface",
-    "run_zephyr_interface",
 ]
 
-import asyncio
-import json
 import logging
-import os
 
 import aiohttp
 from aiohttp import BasicAuth
@@ -119,6 +115,36 @@ class ZephyrInterface:
         test_case_version = url.split("/")[-1]
         return test_case_name, test_case_version
 
+    async def get_statuses(self, status_type=None, max_results=20):
+        """
+        Get all the available statuses in Zephyr Scale.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the available statuses.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Statuses/operation/listStatuses
+        """
+        endpoint = "statuses"
+        url = self.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+
+        params = {"maxResults": max_results}
+        if status_type in ["TEST_CASE", "TEST_PLAN", "TEST_CYCLE", "TEST_EXECUTION"]:
+            params["statusType"] = status_type
+
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(url, headers=headers, params=params) as response:
+                statuses = await response.json()
+        return statuses
+
     async def get_test_case(self, test_case_key):
         """
         Get the details of a test case.
@@ -180,9 +206,12 @@ class ZephyrInterface:
             "Content-Type": "application/json",
         }
         async with aiohttp.ClientSession(raise_for_status=True) as session:
-            response = await session.get(url, headers=headers)
-            steps = await response.json()
-            return steps
+            async with session.get(url=url, headers=headers) as response:
+                steps = await response.json()
+                self.log.debug(
+                    "Querying steps in test case {test_case_key}. Got response: {steps=}"
+                )
+                return steps
 
     async def get_test_cycle(self, test_cycle_key):
         """
@@ -212,13 +241,15 @@ class ZephyrInterface:
         async with aiohttp.ClientSession(raise_for_status=True) as session:
             async with session.get(url=url, headers=headers) as response:
                 values: dict = await response.json()
-                self.log.debug(
-                    f"Querying test cycle {test_cycle_key}. Got response: {values=}"
-                )
+                self.log.debug(f"Queried test cycle {test_cycle_key} successfully.")
 
-        values["project"] = await self.get_project(values["project"]["id"])
-        values["status"] = await self.get_status(values["status"]["id"])
-        values["owner"] = await self.get_user_name(values["owner"]["accountId"])
+        # # TODO - Parse values from IDs
+        # values["project"] = \
+        #     await self.parse_project_from_id(values["project"]["id"])
+        # values["status"] = \
+        #     await self.parse_status_from_id(values["status"]["id"])
+        # values["owner"] = \
+        #     await self.get_user_name(values["owner"]["accountId"])
 
         return values
 
@@ -226,30 +257,28 @@ class ZephyrInterface:
         self, cycle_keys=None, max_results=20, start_at=0, project_key="BLOCK"
     ):
         """
-        Get all the test cycles.
-
-        Parameters
-        ----------
-        cycle_keys : list, optional
-            A list containing the query parameters.
-        max_results : int, optional
-            The maximum number of test cycles to return. Default: 20
-        start_at : int, optional
-            The index of the first test cycle to return. The default is 0.
-            Should be a multiple of maxResults. Default: 0
-        project_key : str, optional
-            The key of the Jira project. The default is "BLOCK".
-
-        Returns
-        -------
-        dict
-            A dictionary containing the test cycles.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Test-Cycles/operation/listTestCycles
+            Get all the test cycles.
+            Parameters
+            ----------
+            cycle_keys : list, optional
+                A list containing the query parameters.
+            max_results : int, optional
+                The maximum number of test cycles to return. Default: 20
+            start_at : int, optional
+                The index of the first test cycle to return. The default is 0.
+                Should be a multiple of maxResults. Default: 0
+            project_key : str, optional
+                The key of the Jira project. The default is "BLOCK".
+            Returns
+            -------
+            dict
+                A dictionary containing the test cycles.
+            See also
+            --------
+            * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                    #tag/Test-Cycles/operation/listTestCycles
         """
+
         # Check if start_at is a multiple of max_results
         if start_at % max_results != 0:
             raise ValueError("startAt must be a multiple of maxResults")
@@ -435,16 +464,48 @@ class ZephyrInterface:
             async with session.get(url, params=query_parameters) as response:
 
                 user_details = await response.json()
-                self.log.debug(
+                self.log.info(
                     f"Token is working fine. User display name: {user_details['displayName']}"
                 )
 
         return user_details["displayName"]
 
-    async def get_project(self, project_id):
+    async def parse_environment_from_id(self, environment_id: int) -> str:
         """
-        Query the project based on a JSON object containing "self" and
-        "id" keys.
+        Query the Zephyr Scale database to get the environment name based on
+        its ID.
+
+        Parameters
+        ----------
+        environment_id : int
+            The ID of the environment.
+
+        Returns
+        -------
+        str
+            The environment name.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Environments/operation/getEnvironment
+        """
+        endpoint = f"environments/{environment_id:d}"
+        url = self.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+        async with aiohttp.ClientSession(raise_for_status=True) as session:
+            async with session.get(url, headers=headers) as response:
+                environment = await response.json()
+
+        return environment["name"]
+
+    async def parse_project_from_id(self, project_id: int) -> str:
+        """
+        Query the Jira project key (e.g. BLOCK, OBS, SITCOM) from the Zephyr
+        Scale database based the project's ID.
 
         Parameters
         ----------
@@ -453,15 +514,15 @@ class ZephyrInterface:
 
         Returns
         -------
-        dict
-            A dictionary containing the details of the project.
+        str
+            The project key.
 
         See also
         --------
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Projects/operation/getProject
         """
-        endpoint = f"projects/{project_id}"
+        endpoint = f"projects/{project_id:d}"
         url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.zephyr_api_token}",
@@ -473,9 +534,10 @@ class ZephyrInterface:
 
         return project["key"]
 
-    async def get_status(self, status_id):
+    async def parse_status_from_id(self, status_id: int) -> str:
         """
-        Get the details of a status.
+        Get the name of a status from the Zephyr Scale database based on its
+        ID number.
 
         Parameters
         ----------
@@ -504,125 +566,71 @@ class ZephyrInterface:
 
         return status["name"]
 
-    async def get_statuses(self, status_type=None, max_results=20):
+    async def parse_test_case_from_id(
+        self, test_case_id: int, versions: int = 1
+    ) -> str:
         """
-        Get all the available statuses in Zephyr Scale.
+        Query the Zephyr Scale database to get the test case key based on its
+        ID.
+
+        Parameters
+        ----------
+        test_case_id : int
+            The ID of the test case.
 
         Returns
         -------
-        dict
-            A dictionary containing the available statuses.
+        str
+            The test case key.
 
         See also
         --------
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Statuses/operation/listStatuses
+                #tag/Test-Cases/operation/getTestCase
         """
-        endpoint = "statuses"
+        raise NotImplementedError(
+            "ZephyrScale does not suport parsing Test Cases from ID"
+        )
+        # endpoint = f"testcases/{test_case_id:d}/versions/{versions:d}"
+        # url = self.zephyr_base_url + endpoint
+        # headers = {
+        #     "Authorization": f"Bearer {self.zephyr_api_token}",
+        #     "Content-Type": "application/json",
+        # }
+        # async with aiohttp.ClientSession(raise_for_status=True) as session:
+        #     async with session.get(url, headers=headers) as response:
+        #         test_case = await response.json()
+
+        # return test_case["key"]
+
+    async def parse_test_cycle_from_id(self, test_cycle_id: int) -> str:
+        """
+        Query the Zephyr Scale database to get the test cycle key based on its
+        ID.
+
+        Parameters
+        ----------
+        test_cycle_id : int
+            The ID of the test cycle.
+
+        Returns
+        -------
+        str
+            The test cycle key.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Cycles/operation/getTestCycle
+        """
+        endpoint = f"testcycles/{test_cycle_id:d}"
         url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.zephyr_api_token}",
             "Content-Type": "application/json",
         }
-
-        params = {"maxResults": max_results}
-        if status_type in ["TEST_CASE", "TEST_PLAN", "TEST_CYCLE", "TEST_EXECUTION"]:
-            params["statusType"] = status_type
-
         async with aiohttp.ClientSession(raise_for_status=True) as session:
-            async with session.get(url, headers=headers, params=params) as response:
-                statuses = await response.json()
-        return statuses
+            async with session.get(url, headers=headers) as response:
+                test_cycle = await response.json()
 
-
-async def run_example():
-
-    # Create a ZephyrInterface object
-    zephyr_api_token = os.getenv("ZEPHYR_API_TOKEN")
-    jira_api_token = os.getenv("JIRA_API_TOKEN")
-    jira_username = os.getenv("JIRA_USERNAME")
-
-    zephyr_interface = ZephyrInterface(
-        jira_api_token=jira_api_token,
-        jira_username=jira_username,
-        zephyr_api_token=zephyr_api_token,
-    )
-
-    # Retrieve all available statuses
-    statuses = await zephyr_interface.get_statuses()
-    with open("statuses.json", "w") as file:
-        json.dump(statuses, file, indent=4)
-    print(f'\nSaved statuses inside "{file.name}"')
-
-    # # Retrieve a test case
-    test_case_key = "BLOCK-T21"
-    test_case = await zephyr_interface.get_test_case(test_case_key)
-    with open(f"{test_case_key}.json", "w") as file:
-        json.dump(test_case, file, indent=4)
-    print(f"Saved data from {test_case_key} inside {file.name}")
-
-    # # Retrieve steps in a test case
-    test_case_steps = await zephyr_interface.get_test_case_steps(test_case_key)
-    with open(f"{test_case_key}_steps.json", "w") as file:
-        json.dump(test_case_steps, file, indent=4)
-    print(f"Saved data from {test_case_key} inside {file.name}")
-
-    # Retrieve a specific test execution
-    test_execution_key = "BLOCK-E192"
-    test_execution = await zephyr_interface.get_test_execution(test_execution_key)
-    with open(f"{test_execution_key}.json", "w") as file:
-        json.dump(test_execution, file, indent=4)
-    print(f"Saved data from {test_execution_key} inside {file.name}")
-
-    # Retrieve the test case name and version from the test execution
-    (
-        test_case_name,
-        test_case_version,
-    ) = zephyr_interface.extract_test_case_from_test_execution(test_execution)
-    print(
-        f"From {test_execution_key}, Test case name: {test_case_name}, "
-        f"Test case version: {test_case_version}\n"
-    )
-
-    # Retrieve steps in a test execution
-    test_execution_steps = await zephyr_interface.get_test_execution_steps(
-        test_execution_key
-    )
-    with open(f"{test_execution_key}_steps.json", "w") as file:
-        json.dump(test_execution_steps, file, indent=4)
-    print(f"Saved data from {test_execution_key} inside {file.name}")
-
-    # Retrieve test cycles
-    print("Querying many test cycles...")
-    test_cycles = await zephyr_interface.get_test_cycles(
-        start_at=20, cycle_keys=["name"]
-    )
-    print("Got them. ")
-
-    for tc in test_cycles:
-        print("  ", tc["key"], tc["name"])
-
-    with open("test_cycles.json", "w") as file:
-        json.dump(test_cycles, file, indent=4)
-        print(f"Saved data from test cycles inside {file.name}\n")
-
-    # Retrieve a test cycle
-    test_cycle_key = test_cycles[0]["key"]
-    test_cycle = await zephyr_interface.get_test_cycle(test_cycle_key)
-    with open(f"{test_cycle_key}.json", "w") as file:
-        json.dump(test_cycle, file, indent=4)
-    print(f"Saved data from {test_cycle_key} inside {file.name}")
-
-    # Retrieve test executions inside a test cycle
-    test_executions = await zephyr_interface.get_test_executions(test_cycle_key)
-    with open(f"{test_cycle_key}_executions.json", "w") as file:
-        json.dump(test_executions, file, indent=4)
-    print(f"Saved data from {test_cycle_key} inside {file.name}")
-
-
-def run_zephyr_interface():
-    asyncio.run(run_example())
-
-
-if __name__ == "__main__":
-    asyncio.run(run_example())
+        return test_cycle["key"]

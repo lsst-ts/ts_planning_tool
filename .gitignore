@@ -30,3 +30,6 @@ pytest_session.txt
 .mypy.ini
 .ruff.toml
 towncrier.toml
+
+# VSCode
+.vscode

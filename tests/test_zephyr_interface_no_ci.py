@@ -1,24 +1,56 @@
-import unittest
-from unittest.mock import AsyncMock, MagicMock, patch
+# This file is part of ts_planning_tool.
+#
+# Developed for the LSST Data Management System.
+# This product includes software developed by the LSST Project
+# (https://www.lsst.org).
+# See the COPYRIGHT file at the top-level directory of this distribution
+# for details of code ownership.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
+import unittest
+
+import pytest
 from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
 
-
-def load_json_data(filename):
-    import json
-    import os
-
-    filepath = os.path.join(os.path.dirname(__file__), "data", filename)
-    with open(filepath, "r") as file:
-        return json.load(file)
+# Real data from Zephyr
+ENVIRONMENT = {"id": 6824992, "name": "1. Daytime"}
+PROJECT = {"id": 350001, "name": "BLOCK"}
+STATUS = {"id": 3940035, "name": "Pass"}
+TEST_CYCLE = {"id": 22355742, "name": "BLOCK-R21"}
 
 
-class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
+@pytest.mark.skipif(
+    "ZEPHYR_API_TOKEN" not in os.environ,
+    reason="Skipping test because ZEPHYR_API_TOKEN is not defined",
+)
+@pytest.mark.skipif(
+    "JIRA_API_TOKEN" not in os.environ,
+    reason="Skipping test because JIRA_API_TOKEN is not defined",
+)
+@pytest.mark.skipif(
+    "JIRA_USERNAME" not in os.environ,
+    reason="Skipping test because JIRA_USERNAME is not defined",
+)
+class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
 
     def setUp(self):
-        self.jira_api_token = "test_token"
-        self.jira_username = "test_username"
-        self.zephyr_api_token = "test_token"
+        self.jira_api_token = os.getenv("JIRA_API_TOKEN")
+        self.jira_username = os.getenv("JIRA_USERNAME")
+        self.zephyr_api_token = os.getenv("ZEPHYR_API_TOKEN")
+
         self.zapi = ZephyrInterface(
             jira_api_token=self.jira_api_token,
             jira_username=self.jira_username,
@@ -30,8 +62,23 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.zapi.jira_api_token, self.jira_api_token)
         self.assertEqual(self.zapi.zephyr_api_token, self.zephyr_api_token)
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_get_statuses(self, mock_get):
+    @pytest.mark.asyncio
+    async def test_extract_test_case_from_test_execution(self):
+
+        expected_test_case_name = "BLOCK-T21"
+        expected_test_case_version = "1"
+
+        test_execution_id = "BLOCK-E192"
+        test_execution = await self.zapi.get_test_execution(test_execution_id)
+        test_case_name, test_case_version = (
+            self.zapi.extract_test_case_from_test_execution(test_execution)
+        )
+
+        self.assertEqual(test_case_name, expected_test_case_name)
+        self.assertEqual(test_case_version, expected_test_case_version)
+
+    @pytest.mark.asyncio
+    async def test_get_statuses(self):
 
         payload_expected_keys = [
             "next",
@@ -42,16 +89,11 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
             "values",
         ]
 
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(return_value=load_json_data("statuses.json"))
-
-        mock_get.return_value.__aenter__.return_value = mock_response
-
         statuses = await self.zapi.get_statuses()
         self.assertListEqual(list(statuses.keys()), payload_expected_keys)
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_get_test_case(self, mock_get):
+    @pytest.mark.asyncio
+    async def test_get_test_case(self):
 
         payload_expected_keys = [
             "id",
@@ -73,18 +115,13 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
             "links",
         ]
 
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(return_value=load_json_data("test_case.json"))
-
-        mock_get.return_value.__aenter__.return_value = mock_response
-
         test_case_key = "BLOCK-T21"
         test_case = await self.zapi.get_test_case(test_case_key)
         self.assertEqual(test_case["key"], test_case_key)
         self.assertListEqual(list(test_case.keys()), payload_expected_keys)
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_get_test_case_steps(self, mock_get):
+    @pytest.mark.asyncio
+    async def test_get_test_case_steps(self):
 
         payload_expected_keys = [
             "next",
@@ -94,20 +131,17 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
             "isLast",
             "values",
         ]
-
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(
-            return_value=load_json_data("test_case_steps.json")
-        )
-
-        mock_get.return_value.__aenter__.return_value = mock_response
+        payload_value_keys = ["inline", "testCase"]
 
         test_case_key = "BLOCK-T21"
         test_case_steps = await self.zapi.get_test_case_steps(test_case_key)
         self.assertListEqual(list(test_case_steps.keys()), payload_expected_keys)
+        self.assertListEqual(
+            list(test_case_steps["values"][0].keys()), payload_value_keys
+        )
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_get_test_cycle(self, mock_get):
+    @pytest.mark.asyncio
+    async def test_get_test_cycle(self):
 
         payload_expected_keys = [
             "id",
@@ -125,18 +159,13 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
             "links",
         ]
 
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(return_value=load_json_data("test_cycle.json"))
-
-        mock_get.return_value.__aenter__.return_value = mock_response
-
-        test_cycle_id = "BLOCK-R21"
-        test_cycle = await self.zapi.get_test_cycle(test_cycle_id)
-        self.assertEqual(test_cycle["key"], test_cycle_id)
+        test_cycle_key = "BLOCK-R21"
+        test_cycle = await self.zapi.get_test_cycle(test_cycle_key)
+        self.assertEqual(test_cycle["key"], test_cycle_key)
         self.assertListEqual(list(test_cycle.keys()), payload_expected_keys)
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_get_test_execution(self, mock_get):
+    @pytest.mark.asyncio
+    async def test_get_test_execution(self):
 
         payload_expected_keys = [
             "id",
@@ -158,20 +187,13 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
             "links",
         ]
 
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(
-            return_value=load_json_data("test_execution.json")
-        )
-
-        mock_get.return_value.__aenter__.return_value = mock_response
-
         test_execution_id = "BLOCK-E192"
         test_execution = await self.zapi.get_test_execution(test_execution_id)
-        self.assertEqual(test_execution["key"], test_execution_id)
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
+        self.assertEqual(test_execution["key"], test_execution_id)
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_get_test_executions(self, mock_get):
+    @pytest.mark.asyncio
+    async def test_get_test_executions(self):
 
         payload_expected_keys = [
             "next",
@@ -202,13 +224,6 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
             "links",
         ]
 
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(
-            return_value=load_json_data("test_executions.json")
-        )
-
-        mock_get.return_value.__aenter__.return_value = mock_response
-
         test_cycle_key = "BLOCK-R21"
         test_executions = await self.zapi.get_test_executions(test_cycle_key)
         self.assertListEqual(list(test_executions.keys()), payload_expected_keys)
@@ -216,56 +231,34 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
             list(test_executions["values"][0].keys()), values_expected_keys
         )
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_parse_environment_from_id(self, mock_get):
-        environment_id = 20001
-        environment_name = "Production"
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(return_value={"name": environment_name})
+    @pytest.mark.asyncio
+    async def test_parse_environment_from_id(self):
 
-        mock_get.return_value.__aenter__.return_value = mock_response
-
+        environment_id = ENVIRONMENT["id"]
         environment = await self.zapi.parse_environment_from_id(environment_id)
-        self.assertEqual(environment, environment_name)
+        self.assertEqual(environment, ENVIRONMENT["name"])
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_parse_project_from_id(self, mock_get):
+    @pytest.mark.asyncio
+    async def test_parse_project_from_id(self):
 
-        project_key = "TEST"
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(return_value={"key": project_key})
-
-        mock_get.return_value.__aenter__.return_value = mock_response
-
-        project_id = 10000
+        project_id = PROJECT["id"]
         project = await self.zapi.parse_project_from_id(project_id)
-        self.assertIsInstance(project, str)
+        self.assertEqual(project, PROJECT["name"])
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_parse_status_from_id(self, mock_get):
-        status_id = 10001
-        status_name = "In Progress"
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(return_value={"name": status_name})
+    @pytest.mark.asyncio
+    async def test_parse_status_from_id(self):
 
-        mock_get.return_value.__aenter__.return_value = mock_response
-
+        status_id = STATUS["id"]
         status = await self.zapi.parse_status_from_id(status_id)
-        self.assertEqual(status, status_name)
+        self.assertEqual(status, STATUS["name"])
 
-    @patch("aiohttp.ClientSession.get")
-    async def test_parse_test_cycle_from_id(self, mock_get):
+    @pytest.mark.asyncio
+    async def test_parse_test_cycle_from_id(self):
 
-        test_cycle_id = 20001
-        test_cycle_name = "Cycle 1"
-        mock_response = MagicMock()
-        mock_response.json = AsyncMock(return_value={"key": test_cycle_name})
-
-        mock_get.return_value.__aenter__.return_value = mock_response
-
+        test_cycle_id = TEST_CYCLE["id"]
         test_cycle = await self.zapi.parse_test_cycle_from_id(test_cycle_id)
-        self.assertEqual(test_cycle, test_cycle_name)
+        self.assertEqual(test_cycle, TEST_CYCLE["name"])
 
 
 if __name__ == "__main__":
-    unittest.main()
+    pytest.main()

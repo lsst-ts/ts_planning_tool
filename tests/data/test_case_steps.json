@@ -1,0 +1,37 @@
+{
+    "next": null,
+    "startAt": 0,
+    "maxResults": 2,
+    "total": 2,
+    "isLast": true,
+    "values": [
+        {
+            "inline": {
+                "description": "Retrieve the information about test case <strong>BLOCK-T21 (1.0)</strong>",
+                "testData": "",
+                "expectedResult": "<br /><br />",
+                "customFields": {
+                    "SAL Script Configuration": "ignore me",
+                    "External SAL Script?": true,
+                    "SAL Script Name": "do not consider me"
+                },
+                "reflectRef": null
+            },
+            "testCase": null
+        },
+        {
+            "inline": {
+                "description": "Retrieve the information about test cycle <strong>BLOCK-R19</strong>.",
+                "testData": null,
+                "expectedResult": "",
+                "customFields": {
+                    "SAL Script Configuration": "",
+                    "External SAL Script?": false,
+                    "SAL Script Name": ""
+                },
+                "reflectRef": null
+            },
+            "testCase": null
+        }
+    ]
+}
