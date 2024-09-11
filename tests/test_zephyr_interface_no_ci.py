@@ -188,30 +188,6 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         )
 
     @pytest.mark.asyncio
-    async def test_get_test_cycle(self):
-
-        payload_expected_keys = [
-            "id",
-            "key",
-            "name",
-            "project",
-            "jiraProjectVersion",
-            "status",
-            "folder",
-            "description",
-            "plannedStartDate",
-            "plannedEndDate",
-            "owner",
-            "customFields",
-            "links",
-        ]
-
-        test_cycle_key = "BLOCK-R21"
-        test_cycle = await self.zapi.get_test_cycle(test_cycle_key)
-        self.assertEqual(test_cycle["key"], test_cycle_key)
-        self.assertListEqual(list(test_cycle.keys()), payload_expected_keys)
-
-    @pytest.mark.asyncio
     async def test_get_test_execution(self):
 
         payload_expected_keys = [

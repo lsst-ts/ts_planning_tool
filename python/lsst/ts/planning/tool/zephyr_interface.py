@@ -203,11 +203,18 @@ class ZephyrInterface:
                 test_case[key] = test_case[key][val]
 
         parse_users = {
-            "owner": ["accountId", "displayName"],
+            "owner": "displayName",
         }
 
         for key, val in parse_users.items():
-            test_case[key][val] = await self.get_user_name(test_case[key][val])
+            test_case[key] = await self.get_user_name(test_case[key])
+            if test_case[key] and parse == "simple":
+                test_case[key] = test_case[key][val]
+
+        if parse == "full":
+            test_case["testScript"] = test_case[
+                "testScript"
+            ] | await self.get_steps_in_test_case(test_case_key)
 
         return test_case
 
@@ -236,7 +243,7 @@ class ZephyrInterface:
                 #tag/Test-Cycles/operation/getTestCycle
         """
         endpoint = f"testcycles/{test_cycle_key}"
-        self.log.debug(f"Querying test cycle {test_cycle_key}")
+        self.log.info(f"Querying test cycle {test_cycle_key}, parse = {parse}")
         test_cycle = await self.get(endpoint)
 
         if parse == "raw":
@@ -248,11 +255,20 @@ class ZephyrInterface:
         }
 
         for key, val in parse_fields.items():
-            test_cycle[key] = await self.parse(test_cycle[key], parse_key=val)
+            test_cycle[key] = await self.parse(test_cycle[key])
             if test_cycle[key] and parse == "simple":
                 test_cycle[key] = test_cycle[key][val]
 
-        # test_cycle["owner"] = await self.get_user_name(test_cycle["owner"]["accountId"])
+        parse_users = {
+            "owner": "displayName",
+        }
+
+        for key, val in parse_users.items():
+            test_cycle[key] = await self.get_user_name(test_cycle[key])
+            if test_cycle[key] and parse == "simple":
+                test_cycle[key] = test_cycle[key][val]
+
+        # TODO - Implement parsing test plans
 
         return test_cycle
 
@@ -425,33 +441,39 @@ class ZephyrInterface:
         }
         return await self.get(endpoint, params)
 
-    async def get_user_name(self, account_id):
+    async def get_user_name(self, json_obj):
         """
-        Get the user name based on a JSON object containing "self"
-        and "accountId" keys.
+        Get the a user name based on a json_obj payload containing `self` and
+        `accountId` keys.
 
         Parameters
         ----------
-        account_id : str
-            The account ID of the user.
+        json_obs : dict
+            A dictionary containing the `self` and `accountId` keys
+            representing a user.
 
         Returns
         -------
-        str
-            The user name.
+        dict
+            A dictionary containing the original payload plus the `displayName`
+            with the user name.
         """
-        endpoint = "user"
-        url = self.jira_base_url + endpoint
+        if json_obj is None:
+            self.log.warn("Received json_obj as None. Returning None.")
+            return None
+
+        url = self.jira_base_url + "user"
 
         if self.jira_api_token is None:
             raise ValueError("JIRA API token is not set")
 
         query_parameters = {
-            "accountId": account_id,
+            "accountId": json_obj["accountId"],
         }
 
         async with aiohttp.ClientSession(
-            auth=BasicAuth(f"{self.jira_username}@lsst.org", self.jira_api_token)
+            auth=BasicAuth(f"{self.jira_username}@lsst.org", self.jira_api_token),
+            raise_for_status=True,
         ) as session:
             async with session.get(url, params=query_parameters) as response:
 
@@ -460,7 +482,7 @@ class ZephyrInterface:
                     f"Token is working fine. User display name: {user_details['displayName']}"
                 )
 
-        return user_details["displayName"]
+        return json_obj | user_details
 
     async def parse(self, json_obj):
         """

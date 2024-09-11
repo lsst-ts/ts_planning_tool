@@ -30,39 +30,39 @@ import os
 from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
 
 
-async def get_test_case(test_case_key, raw=False, **kwargs):
+async def get_test_case(test_case_key, parse="raw", indent=4, **kwargs):
     """Get a test case from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
-    test_case = await zapi.get_test_case(test_case_key, raw=raw)
-    print(json.dumps(test_case, indent=2))
+    test_case = await zapi.get_test_case(test_case_key, parse=parse)
+    print(json.dumps(test_case, indent=indent))
 
 
-async def get_test_cycle(test_cycle_key, raw=False, **kwargs):
+async def get_test_cycle(test_cycle_key, parse="raw", indent=4, **kwargs):
     """Get a test cycle from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
-    test_cycle = await zapi.get_test_cycle(test_cycle_key, raw=raw)
-    print(json.dumps(test_cycle, indent=2))
+    test_cycle = await zapi.get_test_cycle(test_cycle_key, parse=parse)
+    print(json.dumps(test_cycle, indent=indent))
 
 
-async def get_test_execution(test_execution_key, raw=False, **kwargs):
+async def get_test_execution(test_execution_key, parse="raw", indent=4, **kwargs):
     """Get a test execution from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
-    test_execution = await zapi.get_test_execution(test_execution_key, raw=raw)
-    print(json.dumps(test_execution, indent=2))
+    test_execution = await zapi.get_test_execution(test_execution_key, parse=parse)
+    print(json.dumps(test_execution, indent=indent))
 
 
-async def get_steps_in_test_case(test_case_key, **kwargs):
+async def get_steps_in_test_case(test_case_key, indent=4, **kwargs):
     """Get steps in a test case from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
     test_steps = await zapi.get_steps_in_test_case(test_case_key)
-    print(json.dumps(test_steps, indent=2))
+    print(json.dumps(test_steps, indent=indent))
 
 
-async def get_user(user_id, **kwargs):
+async def get_user(user_id, indent=4, **kwargs):
     """Get the user name based on its Jira ID number."""
     zapi = setup_zephyr_interface()
     user_name = await zapi.get_user_name(user_id)
-    print(json.dumps(user_name, indent=2))
+    print(json.dumps(user_name, indent=indent))
 
 
 def run_zapi_command_line():
@@ -77,27 +77,38 @@ def run_zapi_command_line():
     sub_parsers_get.required = True
 
     parse_test_case = sub_parsers_get.add_parser("test_case")
-    parse_test_case.add_argument("test_case_key", type=str)
-    parse_test_case.add_argument("--raw", action="store_true")
     parse_test_case.set_defaults(func=get_test_case)
+    parse_test_case.add_argument("test_case_key", type=str)
+    parse_test_case.add_argument("--indent", type=int, default=4)
+    parse_test_case.add_argument(
+        "--parse", choices=["raw", "full", "simple"], default="raw"
+    )
 
     parse_test_cycle = sub_parsers_get.add_parser("test_cycle")
-    parse_test_cycle.add_argument("test_cycle_key", type=str)
-    parse_test_cycle.add_argument("--raw", action="store_true")
     parse_test_cycle.set_defaults(func=get_test_cycle)
+    parse_test_cycle.add_argument("test_cycle_key", type=str)
+    parse_test_cycle.add_argument("--indent", type=int, default=4)
+    parse_test_cycle.add_argument(
+        "--parse", choices=['raw', 'full', 'simple'], default="raw"
+    )
 
     parse_test_execution = sub_parsers_get.add_parser("test_execution")
-    parse_test_execution.add_argument("test_execution_key", type=str)
-    parse_test_execution.add_argument("--raw", action="store_true")
     parse_test_execution.set_defaults(func=get_test_execution)
+    parse_test_execution.add_argument("test_execution_key", type=str)
+    parse_test_execution.add_argument("--indent", type=int, default=4)
+    parse_test_execution.add_argument(
+        "--parse", choices=['raw', 'full', 'simple'], default="raw"
+    )
 
     parse_test_steps = sub_parsers_get.add_parser("steps")
-    parse_test_steps.add_argument("test_case_key", type=str)
     parse_test_steps.set_defaults(func=get_steps_in_test_case)
+    parse_test_steps.add_argument("test_case_key", type=str)
+    parse_test_steps.add_argument("--indent", type=int, default=4)
 
     parse_test_steps = sub_parsers_get.add_parser("user")
-    parse_test_steps.add_argument("user_id", type=str)
     parse_test_steps.set_defaults(func=get_user)
+    parse_test_steps.add_argument("user_id", type=str)
+    parse_test_steps.add_argument("--indent", type=int, default=4)
 
     args = parser.parse_args()
     asyncio.run(args.func(**vars(args)))
