@@ -24,6 +24,7 @@ __all__ = [
 ]
 
 import logging
+import re
 
 import aiohttp
 from aiohttp import BasicAuth
@@ -420,16 +421,33 @@ class ZephyrInterface:
         self.log.debug(f"Querying steps in test execution {test_execution_key}")
         return await self.get(endpoint)
 
-    async def get_test_executions(self, test_cycle_key, max_results=20):
+    async def list_test_executions(
+        self, test_key, max_results=20, only_last=False, parse="raw"
+    ):
         """
-        Get all the test executions inside a test cycle.
+        Get all the test executions inside a test cycle or corresponding to a
+        test case.
 
         Parameters
         ----------
-        test_cycle_key : str
-            The key of the test cycle.
+        test_key : str
+            The key of the test cycle or test case.
         max_results : int
-            The maximum number of test executions to return.
+            A hint as to the maximum number of results to return in each call.
+            Note that the server reserves the right to impose a `max_results`
+            limit that is lower than the value that a client provides, due to
+            lack or resources or any other condition. When this happens, your
+            results will be truncated. Callers should always check the returned
+            `max_results` to determine the value that is effectively being
+            used.
+        only_last: bool, optional
+            If True, only the last test execution will be returned. The default
+            is `false`.
+        parse : string, optional
+            The type of parsing to perform. The default is "raw". The other
+            options are "full" and "simple". "full" will parse all the fields
+            in the test execution and keep existing values. "simple" will strip
+            out existing values and only keep the parsed values.
 
         Returns
         -------
@@ -441,12 +459,47 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Executions/operation/getTestExecutions
         """
-        endpoint = "testexecutions"
+        if re.search(r"(.+-R[0-9]+)", test_key):
+            param_key = "testCycle"
+        elif re.search(r"(.+-T[0-9]+)", test_key):
+            param_key = "testCase"
+        else:
+            raise ValueError("Invalid test key")
+
         params = {
-            "testCycle": test_cycle_key,
+            param_key: test_key,
             "maxResults": max_results,
+            "onlyLastExecutions": str(only_last),
         }
-        return await self.get(endpoint, params)
+        endpoint = "testexecutions"
+        response = await self.get(endpoint, params)
+
+        if parse == "raw":
+            return response
+
+        parse_fields = {
+            "project": "key",
+            "testCase": "key",
+            "environment": "name",
+            "testExecutionStatus": "name",
+            "testCycle": "key",
+        }
+
+        parse_users = ["executedById", "assignedToId"]
+
+        for test_execution in response["values"]:
+            self.log.info(f"Querying test execution {test_execution['key']}")
+            for key, val in parse_fields.items():
+                response[key] = await self.parse(test_execution[key])
+                if response[key] and parse == "simple":
+                    response[key] = response[key][val]
+
+            for user in parse_users:
+                response[user] = await self.get_user_name(test_execution[user])
+                if response[user] and parse == "simple":
+                    response[user] = response[user]["displayName"]
+
+        return response
 
     async def get_user_name(self, user):
         """

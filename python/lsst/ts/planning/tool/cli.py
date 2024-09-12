@@ -25,9 +25,17 @@ __all__ = ["run_zapi_command_line"]
 import argparse
 import asyncio
 import json
+import logging
 import os
 
 from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
+
+
+async def get_test_execution(test_execution_key, parse="raw", indent=4, **kwargs):
+    """Get a test execution from Zephyr Scale API."""
+    zapi = setup_zephyr_interface()
+    test_execution = await zapi.get_test_execution(test_execution_key, parse=parse)
+    print(json.dumps(test_execution, indent=indent))
 
 
 async def get_test_case(test_case_key, parse="raw", indent=4, **kwargs):
@@ -44,13 +52,6 @@ async def get_test_cycle(test_cycle_key, parse="raw", indent=4, **kwargs):
     print(json.dumps(test_cycle, indent=indent))
 
 
-async def get_test_execution(test_execution_key, parse="raw", indent=4, **kwargs):
-    """Get a test execution from Zephyr Scale API."""
-    zapi = setup_zephyr_interface()
-    test_execution = await zapi.get_test_execution(test_execution_key, parse=parse)
-    print(json.dumps(test_execution, indent=indent))
-
-
 async def get_steps_in_test_case(test_case_key, indent=4, **kwargs):
     """Get steps in a test case from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
@@ -65,6 +66,18 @@ async def get_user(user_id, indent=4, **kwargs):
     print(json.dumps(user_name, indent=indent))
 
 
+async def list_test_executions(
+    key, indent=4, max_results=5, only_last=False, parse="raw", **kwargs
+):
+    """List test executions for a test cycle or a test case from Zephyr Scale
+    API."""
+    zapi = setup_zephyr_interface()
+    test_executions = await zapi.list_test_executions(
+        key, max_results=max_results, only_last=only_last, parse=parse
+    )
+    print(json.dumps(test_executions, indent=indent))
+
+
 def run_zapi_command_line():
     """Command line interface for Zephyr Scale API."""
 
@@ -72,7 +85,10 @@ def run_zapi_command_line():
     sub_parsers = parser.add_subparsers()
     sub_parsers.required = True
 
-    parse_get = sub_parsers.add_parser("get")
+    parse_get = sub_parsers.add_parser(
+        "get",
+        help="Get a single instance of Test Case, Test Cycle, or Test Execution from Zephyr Scale API",
+    )
     sub_parsers_get = parse_get.add_subparsers()
     sub_parsers_get.required = True
 
@@ -110,6 +126,35 @@ def run_zapi_command_line():
     parse_test_steps.add_argument("user_id", type=str)
     parse_test_steps.add_argument("--indent", type=int, default=4)
 
+    parse_list = sub_parsers.add_parser(
+        "list",
+        help="List multiple instances of test case, test cycle, or test executions from Zephyr Scale API",
+    )
+    sub_parse_list = parse_list.add_subparsers()
+    sub_parse_list.required = True
+
+    parse_test_executions = sub_parse_list.add_parser(
+        "test_executions",
+        help="List test executions from a Test Case or from a Test Cycle",
+    )
+    parse_test_executions.set_defaults(func=list_test_executions)
+    parse_test_executions.add_argument(
+        "key",
+        type=str,
+        help="Key associated with a test case or a test cycle. Ex.: BLOCK-T21 or BLOCK-R21.",
+    )
+    parse_test_executions.add_argument("-i", "--indent", type=int, default=4)
+    parse_test_executions.add_argument("-m", "--max", type=int, default=20, help="")
+    parse_test_executions.add_argument(
+        "-o",
+        "--only-last",
+        action="store_true",
+        help="List only the last test execution for each test case/cycle.",
+    )
+    parse_test_executions.add_argument(
+        "-p", "--parse", choices=["raw", "full", "simple"], default="raw"
+    )
+
     args = parser.parse_args()
     asyncio.run(args.func(**vars(args)))
 
@@ -129,10 +174,19 @@ def setup_zephyr_interface():
     if jira_username is None:
         raise ValueError("JIRA_USERNAME environment variable not set.")
 
+    # TODO - The logging level seems to be stuck at WARNING.
+    #   We need to investigate why the log level cannot be changed.
+    #   It works if we change the log level to ERROR. But it does not work
+    #   if we change it to DEBUG or INFO.
+    log_level = logging.ERROR
+    logger = logging.getLogger("ZephyrInterface")
+    logger.setLevel(log_level)
+
     zapi = ZephyrInterface(
         zephyr_api_token=zephyr_token,
         jira_api_token=jira_token,
         jira_username=jira_username,
+        log=logger,
     )
 
     return zapi
