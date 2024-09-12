@@ -139,13 +139,16 @@ class ZephyrInterface:
         ----------
         test_case_key : str
             The key of the test case.
-        raw : bool
-            If True, return the raw JSON response.
 
         Returns
         -------
         dict
             A dictionary containing the steps of the test case.
+
+        Note
+        ----
+        It seems that the json payload from tests steps does not need any
+        parsing. The payload is already in a good format.
 
         See also
         --------
@@ -202,14 +205,12 @@ class ZephyrInterface:
             if test_case[key] and parse == "simple":
                 test_case[key] = test_case[key][val]
 
-        parse_users = {
-            "owner": "displayName",
-        }
+        parse_users = ["owner"]
 
-        for key, val in parse_users.items():
-            test_case[key] = await self.get_user_name(test_case[key])
-            if test_case[key] and parse == "simple":
-                test_case[key] = test_case[key][val]
+        for user in parse_users:
+            test_case[user] = await self.get_user_name(test_case[user])
+            if test_case[user] and parse == "simple":
+                test_case[user] = test_case[user]["displayName"]
 
         if parse == "full":
             test_case["testScript"] = test_case[
@@ -343,7 +344,7 @@ class ZephyrInterface:
 
         return outputs
 
-    async def get_test_execution(self, test_execution_key, raw=False):
+    async def get_test_execution(self, test_execution_key, parse="raw"):
         """
         Get the details of a test execution.
 
@@ -351,8 +352,11 @@ class ZephyrInterface:
         ----------
         test_execution_key : str
             The key of the test execution.
-        raw : bool, optional
-            If True, return the raw JSON response. Default is False.
+        parse : string, optional
+            The type of parsing to perform. The default is "raw". The other
+            options are "full" and "simple". "full" will parse all the fields
+            in the test execution and keep existing values. "simple" will strip
+            out existing values and only keep the parsed values.
 
         Returns
         -------
@@ -368,7 +372,7 @@ class ZephyrInterface:
         self.log.debug(f"Querying test execution {test_execution_key}")
         test_execution = await self.get(endpoint)
 
-        if raw:
+        if parse == "raw":
             return test_execution
 
         parse_fields = {
@@ -381,12 +385,15 @@ class ZephyrInterface:
 
         for key, val in parse_fields.items():
             test_execution[key] = await self.parse(test_execution[key])
-            if test_execution[key]:
+            if test_execution[key] and parse == "simple":
                 test_execution[key] = test_execution[key][val]
 
-        users = ["executedById", "assignedToId"]
-        for user in users:
+        parse_users = ["executedById", "assignedToId"]
+
+        for user in parse_users:
             test_execution[user] = await self.get_user_name(test_execution[user])
+            if test_execution[user] and parse == "simple":
+                test_execution[user] = test_execution[user]["displayName"]
 
         return test_execution
 
@@ -441,25 +448,31 @@ class ZephyrInterface:
         }
         return await self.get(endpoint, params)
 
-    async def get_user_name(self, json_obj):
+    async def get_user_name(self, user):
         """
         Get the a user name based on a json_obj payload containing `self` and
         `accountId` keys.
 
         Parameters
         ----------
-        json_obs : dict
-            A dictionary containing the `self` and `accountId` keys
-            representing a user.
+        user : dict or str
+            This can be a dictionary containing the `self` and `accountId` keys
+            representing a user or  a single string containng the `accountId`.
 
         Returns
         -------
         dict
             A dictionary containing the original payload plus the `displayName`
             with the user name.
+
+        Note
+        ----
+        The API is a bit inconsistent. Test cases and test cycles have users
+        represented as json objects while test executions have users
+        represented as a single string. This method can handle both cases.
         """
-        if json_obj is None:
-            self.log.warn("Received json_obj as None. Returning None.")
+        if user is None:
+            self.log.warn("Received `user` as None. Returning None.")
             return None
 
         url = self.jira_base_url + "user"
@@ -467,9 +480,8 @@ class ZephyrInterface:
         if self.jira_api_token is None:
             raise ValueError("JIRA API token is not set")
 
-        query_parameters = {
-            "accountId": json_obj["accountId"],
-        }
+        json_obj = {"accountId": user} if isinstance(user, str) else user
+        query_parameters = {"accountId": json_obj["accountId"]}
 
         async with aiohttp.ClientSession(
             auth=BasicAuth(f"{self.jira_username}@lsst.org", self.jira_api_token),

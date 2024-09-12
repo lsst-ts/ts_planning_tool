@@ -79,9 +79,9 @@ def run_zapi_command_line():
     parse_test_case = sub_parsers_get.add_parser("test_case")
     parse_test_case.set_defaults(func=get_test_case)
     parse_test_case.add_argument("test_case_key", type=str)
-    parse_test_case.add_argument("--indent", type=int, default=4)
+    parse_test_case.add_argument("-i", "--indent", type=int, default=4)
     parse_test_case.add_argument(
-        "--parse", choices=["raw", "full", "simple"], default="raw"
+        "-p", "--parse", choices=["raw", "full", "simple"], default="raw"
     )
 
     parse_test_cycle = sub_parsers_get.add_parser("test_cycle")
@@ -89,21 +89,21 @@ def run_zapi_command_line():
     parse_test_cycle.add_argument("test_cycle_key", type=str)
     parse_test_cycle.add_argument("--indent", type=int, default=4)
     parse_test_cycle.add_argument(
-        "--parse", choices=['raw', 'full', 'simple'], default="raw"
+        "--parse", choices=["raw", "full", "simple"], default="raw"
     )
 
     parse_test_execution = sub_parsers_get.add_parser("test_execution")
     parse_test_execution.set_defaults(func=get_test_execution)
     parse_test_execution.add_argument("test_execution_key", type=str)
-    parse_test_execution.add_argument("--indent", type=int, default=4)
+    parse_test_execution.add_argument("-i", "--indent", type=int, default=4)
     parse_test_execution.add_argument(
-        "--parse", choices=['raw', 'full', 'simple'], default="raw"
+        "-p", "--parse", choices=["raw", "full", "simple"], default="raw"
     )
 
     parse_test_steps = sub_parsers_get.add_parser("steps")
     parse_test_steps.set_defaults(func=get_steps_in_test_case)
     parse_test_steps.add_argument("test_case_key", type=str)
-    parse_test_steps.add_argument("--indent", type=int, default=4)
+    parse_test_steps.add_argument("-i", "--indent", type=int, default=4)
 
     parse_test_steps = sub_parsers_get.add_parser("user")
     parse_test_steps.set_defaults(func=get_user)

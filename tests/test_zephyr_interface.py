@@ -166,7 +166,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         mock_get.return_value.__aenter__.return_value = mock_response
 
         test_execution_id = "BLOCK-E192"
-        test_execution = await self.zapi.get_test_execution(test_execution_id, raw=True)
+        test_execution = await self.zapi.get_test_execution(test_execution_id)
         self.assertEqual(test_execution["key"], test_execution_id)
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
 

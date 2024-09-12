@@ -211,7 +211,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         ]
 
         test_execution_id = "BLOCK-E192"
-        test_execution = await self.zapi.get_test_execution(test_execution_id, raw=True)
+        test_execution = await self.zapi.get_test_execution(test_execution_id)
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
         self.assertEqual(test_execution["key"], test_execution_id)
 
