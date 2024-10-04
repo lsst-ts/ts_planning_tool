@@ -216,7 +216,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(test_execution["key"], test_execution_id)
 
     @pytest.mark.asyncio
-    async def test_get_test_executions(self):
+    async def test_list_test_executions(self):
 
         payload_expected_keys = [
             "next",
@@ -248,7 +248,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         ]
 
         test_cycle_key = "BLOCK-R21"
-        test_executions = await self.zapi.get_test_executions(test_cycle_key)
+        test_executions = await self.zapi.list_test_executions(test_cycle_key)
         self.assertListEqual(list(test_executions.keys()), payload_expected_keys)
         self.assertListEqual(
             list(test_executions["values"][0].keys()), values_expected_keys

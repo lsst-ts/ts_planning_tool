@@ -171,7 +171,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
 
     @patch("aiohttp.ClientSession.get")
-    async def test_get_test_executions(self, mock_get):
+    async def test_list_test_executions(self, mock_get):
 
         payload_expected_keys = [
             "next",
@@ -210,7 +210,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         mock_get.return_value.__aenter__.return_value = mock_response
 
         test_cycle_key = "BLOCK-R21"
-        test_executions = await self.zapi.get_test_executions(test_cycle_key)
+        test_executions = await self.zapi.list_test_executions(test_cycle_key)
         self.assertListEqual(list(test_executions.keys()), payload_expected_keys)
         self.assertListEqual(
             list(test_executions["values"][0].keys()), values_expected_keys

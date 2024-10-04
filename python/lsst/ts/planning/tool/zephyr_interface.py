@@ -96,7 +96,8 @@ class ZephyrInterface:
 
     async def get(self, endpoint, params=None):
         """
-        Generic method to make HTTP GET requests to the Zephyr Scale API and return the payload.
+        Generic method to make HTTP GET requests to the Zephyr Scale API and
+        return the payload.
         """
         url = self.zephyr_base_url + endpoint
         headers = {
