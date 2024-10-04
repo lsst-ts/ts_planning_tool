@@ -96,7 +96,7 @@ class ZephyrInterface:
 
     async def get(self, endpoint, params=None):
         """
-        Generic method to parse get requests to the Zephyr Scale API.
+        Generic method to make HTTP GET requests to the Zephyr Scale API and return the payload.
         """
         url = self.zephyr_base_url + endpoint
         headers = {
@@ -503,14 +503,14 @@ class ZephyrInterface:
 
     async def get_user_name(self, user):
         """
-        Get the a user name based on a json_obj payload containing `self` and
+        Get the user name based on a json_obj payload containing `self` and
         `accountId` keys.
 
         Parameters
         ----------
         user : dict or str
             This can be a dictionary containing the `self` and `accountId` keys
-            representing a user or  a single string containng the `accountId`.
+            representing a user or a single string containng the `accountId`.
 
         Returns
         -------

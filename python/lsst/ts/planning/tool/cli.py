@@ -105,7 +105,7 @@ def run_zapi_command_line():
     parse_test_cycle.add_argument("test_cycle_key", type=str)
     parse_test_cycle.add_argument("--indent", type=int, default=4)
     parse_test_cycle.add_argument(
-        "--parse", choices=["raw", "full", "simple"], default="raw"
+        "-p", "--parse", choices=["raw", "full", "simple"], default="raw"
     )
 
     parse_test_execution = sub_parsers_get.add_parser("test_execution")
@@ -168,9 +168,9 @@ def setup_zephyr_interface():
     jira_username = os.getenv("JIRA_USERNAME")
 
     if zephyr_token is None:
-        raise ValueError("ZEPHYR_TOKEN environment variable not set.")
+        raise ValueError("ZEPHYR_API_TOKEN environment variable not set.")
     if jira_token is None:
-        raise ValueError("JIRA_TOKEN environment variable not set.")
+        raise ValueError("JIRA_API_TOKEN environment variable not set.")
     if jira_username is None:
         raise ValueError("JIRA_USERNAME environment variable not set.")
 

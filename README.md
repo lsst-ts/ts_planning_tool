@@ -16,7 +16,7 @@ See each section below.
 This module provides a class to interact with [Zephyr Scale API](https://support.smartbear.com/zephyr-scale-cloud/api-docs/).
 It has been tested with Jira Cloud and Zephyr Scale Cloud.
 You will need API tokens from both for it to work.
-Here are the list of environment variables required:
+Here is the list of environment variables required:
 * `ZEPHYR_API_TOKEN`,
 * `JIRA_API_TOKEN`,
 * `JIRA_USERNAME`
