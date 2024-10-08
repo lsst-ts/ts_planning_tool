@@ -7,7 +7,7 @@ name = "ts_planning_tool"
 dynamic = ["version"]
 
 [project.scripts]
-run_zephyr_interface = "lsst.ts.planning.tool:run_zephyr_interface"
+zapi = "lsst.ts.planning.tool:run_zapi_command_line"
 
 [tool.setuptools.packages.find]
 where = ["python"]
@@ -19,11 +19,11 @@ write_to_template = """
 __all__ = ["__version__"]
 __version__ = "{version}"
 """
- 
+
 
 [tool.setuptools.dynamic]
 version = { attr = "setuptools_scm.get_version" }
- 
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 

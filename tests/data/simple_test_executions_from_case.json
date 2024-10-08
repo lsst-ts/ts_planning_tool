@@ -1,0 +1,110 @@
+{
+    "next": null,
+    "startAt": 0,
+    "maxResults": 2,
+    "total": 2,
+    "isLast": true,
+    "values": [
+        {
+            "id": 902085710,
+            "key": "BLOCK-E192",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "testCase": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T21/versions/1",
+                "id": 158630511
+            },
+            "environment": {
+                "id": 6824992,
+                "self": "https://api.zephyrscale.smartbear.com/v2/environments/6824992"
+            },
+            "jiraProjectVersion": null,
+            "testExecutionStatus": {
+                "id": 6360083,
+                "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360083"
+            },
+            "actualEndDate": "2024-05-17T18:07:07Z",
+            "estimatedTime": null,
+            "executionTime": null,
+            "executedById": "62753116e51c620070bfbcd1",
+            "assignedToId": "62753116e51c620070bfbcd1",
+            "comment": null,
+            "automated": false,
+            "testCycle": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22158897",
+                "id": 22158897
+            },
+            "customFields": {
+                "HV on?": false,
+                "Room light on?": false,
+                "ITL sequencer config": null,
+                "E2V sequencer config ": null,
+                "Corner sequencer config": null
+            },
+            "links": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/902085710/links",
+                "issues": [
+                    {
+                        "self": "https://api.zephyrscale.smartbear.com/v2/links/95535911",
+                        "issueId": 211993,
+                        "id": 95535911,
+                        "target": "https://rubinobs.atlassian.net/rest/api/2/issue/211993",
+                        "type": "BLOCKS"
+                    }
+                ]
+            }
+        },
+        {
+            "id": 927006346,
+            "key": "BLOCK-E306",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "testCase": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T21/versions/1",
+                "id": 158630511
+            },
+            "environment": {
+                "id": 6824992,
+                "self": "https://api.zephyrscale.smartbear.com/v2/environments/6824992"
+            },
+            "jiraProjectVersion": null,
+            "testExecutionStatus": {
+                "id": 6360081,
+                "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+            },
+            "actualEndDate": "2024-06-04T21:55:22Z",
+            "estimatedTime": null,
+            "executionTime": null,
+            "executedById": null,
+            "assignedToId": "62753116e51c620070bfbcd1",
+            "comment": null,
+            "automated": false,
+            "testCycle": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22158897",
+                "id": 22158897
+            },
+            "customFields": {
+                "HV on?": false,
+                "Room light on?": false,
+                "ITL sequencer config": null,
+                "E2V sequencer config ": null,
+                "Corner sequencer config": null
+            },
+            "links": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/927006346/links",
+                "issues": []
+            }
+        }
+    ],
+    "project": "BLOCK",
+    "testCase": "BLOCK-T21",
+    "environment": "1. Daytime",
+    "testExecutionStatus": "Not Executed",
+    "testCycle": "BLOCK-R19",
+    "executedById": null,
+    "assignedToId": "Bruno Quint"
+}

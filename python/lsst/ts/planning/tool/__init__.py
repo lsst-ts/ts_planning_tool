@@ -20,7 +20,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 try:
+    from .cli import *
     from .version import *
+    from .zephyr_interface import *
 except ImportError:
     __version__ = "?"
     __repo_version__ = "?"
