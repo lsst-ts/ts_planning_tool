@@ -462,8 +462,10 @@ class ZephyrInterface:
         """
         if re.search(r"(.+-R[0-9]+)", test_key):
             param_key = "testCycle"
+            self.log.info(f"Querying test executions in test cycle {test_key}")
         elif re.search(r"(.+-T[0-9]+)", test_key):
             param_key = "testCase"
+            self.log.info(f"Querying test executions in test case {test_key}")
         else:
             raise ValueError("Invalid test key")
 
@@ -488,17 +490,18 @@ class ZephyrInterface:
 
         parse_users = ["executedById", "assignedToId"]
 
+        self.log.debug(f"Found {len(response['values'])} test executions")
         for test_execution in response["values"]:
             self.log.info(f"Querying test execution {test_execution['key']}")
             for key, val in parse_fields.items():
-                response[key] = await self.parse(test_execution[key])
-                if response[key] and parse == "simple":
-                    response[key] = response[key][val]
+                test_execution[key] = await self.parse(test_execution[key])
+                if test_execution[key] and parse == "simple":
+                    test_execution[key] = test_execution[key][val]
 
             for user in parse_users:
-                response[user] = await self.get_user_name(test_execution[user])
-                if response[user] and parse == "simple":
-                    response[user] = response[user]["displayName"]
+                test_execution[user] = await self.get_user_name(test_execution[user])
+                if test_execution[user] and parse == "simple":
+                    test_execution[user] = test_execution[user]["displayName"]
 
         return response
 
@@ -526,7 +529,7 @@ class ZephyrInterface:
         represented as a single string. This method can handle both cases.
         """
         if user is None:
-            self.log.warn("Received `user` as None. Returning None.")
+            self.log.warning("Received `user` as None. Returning None.")
             return None
 
         url = self.jira_base_url + "user"
@@ -571,7 +574,7 @@ class ZephyrInterface:
             value extracted from the JSON response.
         """
         if json_obj is None:
-            self.log.warn("Received json_obj as None. Returning None.")
+            self.log.warning("Received json_obj as None. Returning None.")
             return None
 
         if self.zephyr_base_url in json_obj["self"]:
