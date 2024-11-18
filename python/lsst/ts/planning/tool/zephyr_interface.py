@@ -133,14 +133,16 @@ class ZephyrInterface:
 
         return await self.get(endpoint, params)
 
-    async def get_steps_in_test_case(self, test_case_key):
+    async def get_steps(self, test_key):
         """
-        Get all the steps in a test case.
+        Get all the steps in a test case or in a test execution.
+        The method will determine if the test key is a test case or a test
+        execution and will query the appropriate endpoint.
 
         Parameters
         ----------
-        test_case_key : str
-            The key of the test case.
+        test_key : str
+            The key of the test case or test execution.
 
         Returns
         -------
@@ -156,9 +158,19 @@ class ZephyrInterface:
         --------
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Cases/operation/getTestCaseTestSteps
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Executions/operation/getTestExecutionTestSteps
         """
-        endpoint = f"testcases/{test_case_key}/teststeps"
-        self.log.info(f"Querying steps in test case {test_case_key}")
+        if re.search(r"(.+-E[0-9]+)", test_key):
+            param_key = "testexecutions"
+            self.log.info(f"Querying steps in test execution {test_key}")
+        elif re.search(r"(.+-T[0-9]+)", test_key):
+            param_key = "testcases"
+            self.log.info(f"Querying steps in test case {test_key}")
+        else:
+            raise ValueError("Invalid test key")
+
+        endpoint = f"{param_key}/{test_key}/teststeps"
         return await self.get(endpoint)
 
     async def get_test_case(self, test_case_key, parse="raw"):
@@ -418,9 +430,6 @@ class ZephyrInterface:
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Executions/operation/getTestExecutionTestSteps
         """
-        endpoint = f"testexecutions/{test_execution_key}/teststeps"
-        self.log.debug(f"Querying steps in test execution {test_execution_key}")
-        return await self.get(endpoint)
 
     async def list_test_executions(
         self, test_key, max_results=20, only_last=False, parse="raw"
@@ -462,8 +471,10 @@ class ZephyrInterface:
         """
         if re.search(r"(.+-R[0-9]+)", test_key):
             param_key = "testCycle"
+            self.log.info(f"Querying test executions in test cycle {test_key}")
         elif re.search(r"(.+-T[0-9]+)", test_key):
             param_key = "testCase"
+            self.log.info(f"Querying test executions in test case {test_key}")
         else:
             raise ValueError("Invalid test key")
 
@@ -488,17 +499,18 @@ class ZephyrInterface:
 
         parse_users = ["executedById", "assignedToId"]
 
+        self.log.debug(f"Found {len(response['values'])} test executions")
         for test_execution in response["values"]:
             self.log.info(f"Querying test execution {test_execution['key']}")
             for key, val in parse_fields.items():
-                response[key] = await self.parse(test_execution[key])
-                if response[key] and parse == "simple":
-                    response[key] = response[key][val]
+                test_execution[key] = await self.parse(test_execution[key])
+                if test_execution[key] and parse == "simple":
+                    test_execution[key] = test_execution[key][val]
 
             for user in parse_users:
-                response[user] = await self.get_user_name(test_execution[user])
-                if response[user] and parse == "simple":
-                    response[user] = response[user]["displayName"]
+                test_execution[user] = await self.get_user_name(test_execution[user])
+                if test_execution[user] and parse == "simple":
+                    test_execution[user] = test_execution[user]["displayName"]
 
         return response
 
@@ -526,7 +538,7 @@ class ZephyrInterface:
         represented as a single string. This method can handle both cases.
         """
         if user is None:
-            self.log.warn("Received `user` as None. Returning None.")
+            self.log.warning("Received `user` as None. Returning None.")
             return None
 
         url = self.jira_base_url + "user"
@@ -571,7 +583,7 @@ class ZephyrInterface:
             value extracted from the JSON response.
         """
         if json_obj is None:
-            self.log.warn("Received json_obj as None. Returning None.")
+            self.log.warning("Received json_obj as None. Returning None.")
             return None
 
         if self.zephyr_base_url in json_obj["self"]:
