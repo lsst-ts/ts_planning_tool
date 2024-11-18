@@ -103,7 +103,7 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         mock_get.return_value.__aenter__.return_value = mock_response
 
         test_case_key = "BLOCK-T21"
-        test_case_steps = await self.zapi.get_steps_in_test_case(test_case_key)
+        test_case_steps = await self.zapi.get_steps(test_case_key)
         self.assertListEqual(list(test_case_steps.keys()), payload_expected_keys)
 
     @patch("aiohttp.ClientSession.get")

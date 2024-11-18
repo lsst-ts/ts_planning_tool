@@ -52,10 +52,10 @@ async def get_test_cycle(test_cycle_key, parse="raw", indent=4, **kwargs):
     print(json.dumps(test_cycle, indent=indent))
 
 
-async def get_steps_in_test_case(test_case_key, indent=4, **kwargs):
+async def get_steps(test_key, indent=4, **kwargs):
     """Get steps in a test case from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
-    test_steps = await zapi.get_steps_in_test_case(test_case_key)
+    test_steps = await zapi.get_steps(test_key)
     print(json.dumps(test_steps, indent=indent))
 
 
@@ -118,8 +118,12 @@ def run_zapi_command_line():
     )
 
     parse_test_steps = sub_parsers_get.add_parser("steps")
-    parse_test_steps.set_defaults(func=get_steps_in_test_case)
-    parse_test_steps.add_argument("test_case_key", type=str)
+    parse_test_steps.set_defaults(func=get_steps)
+    parse_test_steps.add_argument(
+        "test_key",
+        type=str,
+        help="Key associated with a test case (e.g. BLOCK-T00) or a test execution (e.g. BLOCK-E000).",
+    )
     parse_test_steps.add_argument("-i", "--indent", type=int, default=4)
 
     parse_test_steps = sub_parsers_get.add_parser("user")
@@ -185,7 +189,9 @@ def setup_logging():
     ch.setLevel(log_level)
 
     # Create formatter
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
 
     # Add formatter to ch
     ch.setFormatter(formatter)
