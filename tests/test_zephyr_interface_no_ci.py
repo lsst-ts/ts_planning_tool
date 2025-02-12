@@ -42,9 +42,9 @@ PROJECT = {
     "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001",
 }
 STATUS = {
-    "id": 3940035,
+    "id": 6360083,
     "name": "Pass",
-    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/3940035",
+    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360083",
 }
 TEST_CYCLE = {
     "id": 22355742,
