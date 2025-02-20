@@ -52,10 +52,10 @@ async def get_test_cycle(test_cycle_key, parse="raw", indent=4, **kwargs):
     print(json.dumps(test_cycle, indent=indent))
 
 
-async def get_steps(test_key, indent=4, **kwargs):
+async def get_steps(test_key, indent=4, parse=True, complement=True, **kwargs):
     """Get steps in a test case from Zephyr Scale API."""
     zapi = setup_zephyr_interface()
-    test_steps = await zapi.get_steps(test_key)
+    test_steps = await zapi.get_steps(test_key, parse=parse, complement=complement)
     print(json.dumps(test_steps, indent=indent))
 
 

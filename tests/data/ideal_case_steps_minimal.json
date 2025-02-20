@@ -1,0 +1,44 @@
+{
+    "steps": [
+        {
+          "title": "Enable LATISS",
+          "status": "NOT EXECUTED",
+          "test_data": "None",
+          "expected_result": "Script completes without error. All ATSpectrograph components are enabled.",
+          "sal_script": "auxtel/enable_latiss.py",
+          "script_configuration": "",
+          "is_external": true,
+          "actual_result": "None"
+        },
+        {
+          "title": "Run LATISS checkouts",
+          "status": "NOT EXECUTED",
+          "test_data": "None",
+          "expected_result": "Script completes without error.",
+          "sal_script": "auxtel/daytime_checkout/latiss_checkout.py",
+          "script_configuration": "",
+          "is_external": false,
+          "actual_result": "None"
+        },
+        {
+          "title": "Enable ATCS.",
+          "status": "NOT EXECUTED",
+          "test_data": "None",
+          "expected_result": "Script completes without error. All AuxTel components are in enabled mode.",
+          "sal_script": "auxtel/enable_atcs.py",
+          "script_configuration": "",
+          "is_external": false,
+          "actual_result": "None"
+        },
+        {
+          "title": "ATPneumatics Checkout",
+          "status": "NOT EXECUTED",
+          "test_data": "None",
+          "expected_result": "Script completes without error.",
+          "sal_script": "auxtel/daytime_checkout/atpneumatics_checkout.py",
+          "script_configuration": "",
+          "is_external": false,
+          "actual_result": "None"
+        }
+      ]
+}
