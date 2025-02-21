@@ -23,13 +23,13 @@ __all__ = [
     "ZephyrInterface",
 ]
 
-import aiohttp
 import asyncio
 import logging
 import re
-
-from aiohttp import BasicAuth
 from datetime import datetime
+
+import aiohttp
+from aiohttp import BasicAuth
 
 # Your JIRA Cloud base URL
 ZEPHYR_BASE_URL = "https://api.zephyrscale.smartbear.com/v2/"
@@ -52,7 +52,8 @@ class ZephyrInterface:
         https://id.atlassian.com/manage-profile/security/api-tokens
 
     Use the URL below to create an API token for Zephyr Scale:
-        https://rubinobs.atlassian.net/plugins/servlet/ac/com.kanoah.test-manager/api-access-tokens
+        https://rubinobs.atlassian.net/plugins/servlet/ac/\
+            com.kanoah.test-manager/api-access-tokens
 
     Then, store the API tokens inside the JIRA_API_TOKEN and ZEPHYR_API_TOKEN
     environment variables. You will also want to store your username in the
@@ -135,7 +136,7 @@ class ZephyrInterface:
 
         return await self.get(endpoint, params)
 
-    async def get_steps(self, test_key, parse=True, complement=True):
+    async def get_steps(self, test_key, complement=True):
         """
         Get all the steps in a test case or in a test execution.
         The method will determine if the test key is a test case or a test
@@ -184,26 +185,18 @@ class ZephyrInterface:
             steps = []
             for single_step in payload["values"]:
                 if "testCase" in single_step and single_step["testCase"] is not None:
-                    self.log.info(f"  Parsing sub-steps from test case: {single_step['testCase']['testCaseKey']}")
-                    sub_steps = await self.get_steps(single_step["testCase"]['testCaseKey'])
-                    steps.extend(sub_steps["values"])
-                else:
-                    steps.append(single_step)
-            payload["values"] = steps
-
-        elif complement and param_key == "testexecutions":
-            steps = []
-            for single_step in payload["values"]:
-                if "testExecution" in single_step and single_step["testExecution"] is not None:
-                    self.log.info(f"  Parsing sub-steps from test execution: {single_step['testExecution']['executionKey']}")
-                    sub_steps = await self.get_steps(single_step["testExecution"]['executionKey'])
+                    self.log.info(
+                        f"  Parsing sub-steps from test case: {single_step['testCase']['testCaseKey']}"
+                    )
+                    sub_steps = await self.get_steps(
+                        single_step["testCase"]["testCaseKey"]
+                    )
                     steps.extend(sub_steps["values"])
                 else:
                     steps.append(single_step)
             payload["values"] = steps
 
         return payload
-
 
     async def get_test_case(self, test_case_key, parse="raw", complement=True):
         """
@@ -223,8 +216,8 @@ class ZephyrInterface:
             "simple" will strip out existing values and only keep the parsed
             values.
         complement : bool, optional
-            If True, the method will complement the payload with the test steps.
-            The default is True.
+            If True, the method will complement the payload with the test
+            steps. The default is True.
 
         Returns
         -------
@@ -249,7 +242,9 @@ class ZephyrInterface:
             "status": "name",
         }
 
-        tasks = [self.parse(test_case[key], parse=parse) for key, val in parse_fields.items()]
+        tasks = [
+            self.parse(test_case[key], parse=parse) for key, val in parse_fields.items()
+        ]
         parsed_fields = await asyncio.gather(*tasks)
         for (key, val), parsed in zip(parse_fields.items(), parsed_fields):
             test_case[key] = parsed
@@ -262,9 +257,9 @@ class ZephyrInterface:
                 test_case[user] = test_case[user]["displayName"]
 
         if complement:
-            test_case["testScript"] = test_case[
-                "testScript"
-            ] | await self.get_steps(test_case_key, parse=parse)
+            test_case["testScript"] = test_case["testScript"] | await self.get_steps(
+                test_case_key, complement=complement
+            )
 
         return test_case
 
@@ -370,7 +365,6 @@ class ZephyrInterface:
             async with session.get(
                 url=url, headers=headers, params=query_parameters
             ) as response:
-
                 test_cycles = await response.json()
                 # We are only interested in the list of test cycles
                 test_cycles = test_cycles["values"]
@@ -393,7 +387,9 @@ class ZephyrInterface:
 
         return outputs
 
-    async def get_test_execution(self, test_execution_key, parse="raw"):
+    async def get_test_execution(
+        self, test_execution_key, parse="raw", complement=True
+    ):
         """
         Get the details of a test execution.
 
@@ -406,6 +402,9 @@ class ZephyrInterface:
             options are "full" and "simple". "full" will parse all the fields
             in the test execution and keep existing values. "simple" will strip
             out existing values and only keep the parsed values.
+        complement : bool, optional
+            If True, the method will complement the payload with steps in the
+            test execution. The default is True.
 
         Returns
         -------
@@ -434,11 +433,10 @@ class ZephyrInterface:
 
         t_start = datetime.now()
         self.log.info(f"Parsing information for {test_execution_key} - START")
-
-        tasks = [
-            self.parse(test_execution[key], parse=parse) for key in parse_fields.keys()
-        ]
-        parsed_fields = await asyncio.gather(*tasks)
+        for key, val in parse_fields.items():
+            test_execution[key] = await self.parse(test_execution[key])
+            if test_execution[key] and parse == "simple":
+                test_execution[key] = test_execution[key][val]
 
         parse_users = ["executedById", "assignedToId"]
 
@@ -447,8 +445,30 @@ class ZephyrInterface:
             if test_execution[user] and parse == "simple":
                 test_execution[user] = test_execution[user]["displayName"]
 
+        # Fill the payload with the test execution steps
+        if complement:
+            # Get the test execution and test case steps, they should have the
+            #   same number of elements (steps).
+            test_execution_steps = await self.get_steps(
+                test_execution_key, complement=complement
+            )
+            test_case_steps = await self.get_steps(
+                test_execution["testCase"]["key"], complement=complement
+            )
+            assert len(test_execution_steps["values"]) == len(test_case_steps["values"])
+
+            # Loop for each step to merge the information in the json payload
+            for exec_step, case_step in zip(
+                test_execution_steps["values"], test_case_steps["values"]
+            ):
+                exec_step["inline"] = exec_step["inline"] | case_step["inline"]
+
+            test_execution["testScript"] = test_execution_steps
+
         delta_t = datetime.now() - t_start
-        self.log.info(f"Parsing information for {test_execution_key} in {delta_t} s - DONE")
+        self.log.info(
+            f"Parsing information for {test_execution_key} in {delta_t} s - DONE"
+        )
 
         return test_execution
 
@@ -575,7 +595,6 @@ class ZephyrInterface:
             raise_for_status=True,
         ) as session:
             async with session.get(url, params=query_parameters) as response:
-
                 user_details = await response.json()
                 self.log.debug(
                     f"Token is working fine. User display name: {user_details['displayName']}"

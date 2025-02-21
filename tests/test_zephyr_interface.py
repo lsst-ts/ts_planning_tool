@@ -14,7 +14,6 @@ def load_json_data(filename):
 
 
 class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
-
     def setUp(self):
         self.jira_api_token = "test_token"
         self.jira_username = "test_username"
@@ -32,7 +31,6 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
 
     @patch("aiohttp.ClientSession.get")
     async def test_get_list_of_statuses(self, mock_get):
-
         payload_expected_keys = [
             "next",
             "startAt",
@@ -52,7 +50,6 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
 
     @patch("aiohttp.ClientSession.get")
     async def test_get_test_case(self, mock_get):
-
         payload_expected_keys = [
             "id",
             "key",
@@ -85,7 +82,6 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
 
     @patch("aiohttp.ClientSession.get")
     async def test_get_steps_in_test_case(self, mock_get):
-
         payload_expected_keys = [
             "next",
             "startAt",
@@ -108,7 +104,6 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
 
     @patch("aiohttp.ClientSession.get")
     async def test_get_test_cycle(self, mock_get):
-
         payload_expected_keys = [
             "id",
             "key",
@@ -137,7 +132,6 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
 
     @patch("aiohttp.ClientSession.get")
     async def test_get_test_execution(self, mock_get):
-
         payload_expected_keys = [
             "id",
             "key",
@@ -172,7 +166,6 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
 
     @patch("aiohttp.ClientSession.get")
     async def test_list_test_executions(self, mock_get):
-
         payload_expected_keys = [
             "next",
             "startAt",
