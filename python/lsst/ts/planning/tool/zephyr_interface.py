@@ -136,69 +136,93 @@ class ZephyrInterface:
 
         return await self.get(endpoint, params)
 
-    async def get_steps(self, test_key, complement=True):
+    async def get_steps_from_call_to_test(self, json_steps: list):
         """
-        Get all the steps in a test case or in a test execution.
-        The method will determine if the test key is a test case or a test
-        execution and will query the appropriate endpoint.
+        Get the steps from a call to a test case.
+
+        Parameters
+        ----------
+        json_steps : list
+            A list containing the steps of a test case.
+
+        Returns
+        -------
+        list
+            A list containing the steps of the test case.
+        """
+        steps = []
+        for single_step in json_steps:
+            if "testCase" in single_step and single_step["testCase"] is not None:
+                self.log.info(
+                    f"  Parsing sub-steps from test case:"
+                    f"  {single_step['testCase']['testCaseKey']}"
+                )
+                # Call get_steps_in_test_case with call_to_test=False to avoid
+                # infinite recursion.
+                sub_steps = await self.get_steps_in_test_case(
+                    single_step["testCase"]["testCaseKey"], call_to_test=False
+                )
+                steps.extend(sub_steps["values"])
+            else:
+                steps.append(single_step)
+        return steps
+
+    async def get_steps_in_test_case(self, key, call_to_test=False):
+        """
+        Get all the steps in a test case.
 
         Parameters
         ----------
         test_key : str
             The key of the test case or test execution.
-        parse : bool, optional
-            If True, the method will parse the payload. The default is True.
-        complement : bool, optional
-            If True, the method will complement the payload with the test case
-            or test execution details. The default is True.
+        call_to_test : bool
+            Merge steps from test cases that are called from the main test
+            case.
 
         Returns
         -------
         dict
             A dictionary containing the steps of the test case.
 
-        Note
-        ----
-        It seems that the json payload from tests steps does not need any
-        parsing. The payload is already in a good format.
-
         See also
         --------
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Cases/operation/getTestCaseTestSteps
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Test-Executions/operation/getTestExecutionTestSteps
         """
-        if re.search(r"(.+-E[0-9]+)", test_key):
-            param_key = "testexecutions"
-            self.log.info(f"Querying steps in test execution {test_key}")
-        elif re.search(r"(.+-T[0-9]+)", test_key):
-            param_key = "testcases"
-            self.log.info(f"Querying steps in test case {test_key}")
-        else:
-            raise ValueError("Invalid test key")
-
-        endpoint = f"{param_key}/{test_key}/teststeps"
+        endpoint = f"testcases/{key}/teststeps"
         payload = await self.get(endpoint)
 
-        if complement and param_key == "testcases":
-            steps = []
-            for single_step in payload["values"]:
-                if "testCase" in single_step and single_step["testCase"] is not None:
-                    self.log.info(
-                        f"  Parsing sub-steps from test case: {single_step['testCase']['testCaseKey']}"
-                    )
-                    sub_steps = await self.get_steps(
-                        single_step["testCase"]["testCaseKey"]
-                    )
-                    steps.extend(sub_steps["values"])
-                else:
-                    steps.append(single_step)
-            payload["values"] = steps
+        if call_to_test:
+            payload["values"] = await self.get_steps_from_call_to_test(
+                payload["values"]
+            )
 
         return payload
 
-    async def get_test_case(self, test_case_key, parse="raw", complement=True):
+    async def get_steps_in_test_execution(self, test_key):
+        """
+        Get all the steps in a test execution.
+
+        Parameters
+        ----------
+        test_key : str
+            The key of the test case or test execution.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the steps of the test case.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Executions/operation/getTestExecutionTestSteps
+        """
+        endpoint = f"testexecutions/{test_key}/teststeps"
+        payload = await self.get(endpoint)
+        return payload
+
+    async def get_test_case(self, test_case_key, parse="raw"):
         """
         Get the details of a test case.
 
@@ -215,9 +239,6 @@ class ZephyrInterface:
             the fields in the test cycle and keep existing values.
             "simple" will strip out existing values and only keep the parsed
             values.
-        complement : bool, optional
-            If True, the method will complement the payload with the test
-            steps. The default is True.
 
         Returns
         -------
@@ -246,7 +267,7 @@ class ZephyrInterface:
             self.parse(test_case[key], parse=parse) for key, val in parse_fields.items()
         ]
         parsed_fields = await asyncio.gather(*tasks)
-        for (key, val), parsed in zip(parse_fields.items(), parsed_fields):
+        for (key, _), parsed in zip(parse_fields.items(), parsed_fields):
             test_case[key] = parsed
 
         parse_users = ["owner"]
@@ -256,10 +277,10 @@ class ZephyrInterface:
             if test_case[user] and parse == "simple":
                 test_case[user] = test_case[user]["displayName"]
 
-        if complement:
-            test_case["testScript"] = test_case["testScript"] | await self.get_steps(
-                test_case_key, complement=complement
-            )
+        if parse == "full":
+            test_case["testScript"] = test_case[
+                "testScript"
+            ] | await self.get_steps_in_test_case(test_case_key, call_to_test=True)
 
         return test_case
 
@@ -387,9 +408,7 @@ class ZephyrInterface:
 
         return outputs
 
-    async def get_test_execution(
-        self, test_execution_key, parse="raw", complement=True
-    ):
+    async def get_test_execution(self, test_execution_key, parse="raw"):
         """
         Get the details of a test execution.
 
@@ -402,9 +421,6 @@ class ZephyrInterface:
             options are "full" and "simple". "full" will parse all the fields
             in the test execution and keep existing values. "simple" will strip
             out existing values and only keep the parsed values.
-        complement : bool, optional
-            If True, the method will complement the payload with steps in the
-            test execution. The default is True.
 
         Returns
         -------
@@ -446,14 +462,14 @@ class ZephyrInterface:
                 test_execution[user] = test_execution[user]["displayName"]
 
         # Fill the payload with the test execution steps
-        if complement:
+        if parse == "full":
             # Get the test execution and test case steps, they should have the
-            #   same number of elements (steps).
-            test_execution_steps = await self.get_steps(
-                test_execution_key, complement=complement
+            # same number of elements (steps).
+            test_execution_steps = await self.get_steps_in_test_execution(
+                test_execution_key
             )
-            test_case_steps = await self.get_steps(
-                test_execution["testCase"]["key"], complement=complement
+            test_case_steps = await self.get_steps_in_test_case(
+                test_execution["testCase"]["key"], call_to_test=True
             )
             assert len(test_execution_steps["values"]) == len(test_case_steps["values"])
 

@@ -23,8 +23,7 @@ import os
 import unittest
 
 import pytest
-from lsst.ts.planning.tool import load_json_data, ZephyrInterface
-
+from lsst.ts.planning.tool import ZephyrInterface, load_json_data
 
 # Real data from Zephyr
 ENVIRONMENT = {
@@ -210,7 +209,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         payload_value_keys = ["inline", "testCase"]
 
         test_case_key = "BLOCK-T21"
-        test_case_steps = await self.zapi.get_steps(test_case_key)
+        test_case_steps = await self.zapi.get_steps_in_test_case(test_case_key)
         self.assertListEqual(list(test_case_steps.keys()), payload_expected_keys)
         self.assertListEqual(
             list(test_case_steps["values"][0].keys()), payload_value_keys
@@ -227,8 +226,10 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
             "values",
         ]
 
-        test_execution_id = "BLOCK-E192"
-        test_execution_steps = await self.zapi.get_steps(test_execution_id)
+        test_execution_key = "BLOCK-E192"
+        test_execution_steps = await self.zapi.get_steps_in_test_execution(
+            test_execution_key
+        )
         self.assertListEqual(list(test_execution_steps.keys()), payload_expected_keys)
 
     @pytest.mark.asyncio
