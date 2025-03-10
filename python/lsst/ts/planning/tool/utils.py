@@ -18,14 +18,30 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""Utility functions for the Zephyr Scale API."""
 
-try:
-    from .cli import *
-    from .utils import *
-    from .version import *
-    from .zephyr_interface import *
-except ImportError:
-    __version__ = "?"
-    __repo_version__ = "?"
-    __fingerprint__ = "? *"
-    __dependency_versions__ = {}
+__all__ = ["load_json_data"]
+
+import json
+import os
+
+
+def load_json_data(filename: str, path: str) -> dict:
+    """
+    Load JSON data from a file.
+
+    Parameters
+    ----------
+    filename : str
+        The name of the file to load.
+    path : str
+        The path to the file.
+
+    Returns
+    -------
+    dict
+        The JSON data.
+    """
+    filepath = os.path.join(path, "data", filename)
+    with open(filepath, "r") as file:
+        return json.load(file)

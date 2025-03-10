@@ -23,7 +23,8 @@ import os
 import unittest
 
 import pytest
-from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
+from lsst.ts.planning.tool import load_json_data, ZephyrInterface
+
 
 # Real data from Zephyr
 ENVIRONMENT = {
@@ -51,15 +52,6 @@ TEST_CYCLE = {
     "key": "BLOCK-R21",
     "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22355742",
 }
-
-
-def load_json_data(filename):
-    import json
-    import os
-
-    filepath = os.path.join(os.path.dirname(__file__), "data", filename)
-    with open(filepath, "r") as file:
-        return json.load(file)
 
 
 @pytest.mark.skipif(
@@ -173,7 +165,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
 
         test_case_key = "BLOCK-T21"
         test_case = await self.zapi.get_test_case(test_case_key, parse="full")
-        json_data = load_json_data("full_test_case.json")
+        json_data = load_json_data("full_test_case.json", os.path.dirname(__file__))
         self.assertEqual(test_case["key"], test_case_key)
         self.assertListEqual(list(test_case.keys()), payload_expected_keys)
         self.assertListEqual(list(test_case.keys()), list(json_data.keys()))
@@ -267,7 +259,7 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(test_execution["key"], test_execution_id)
 
     # WARNING: This test will fail if you change the numner of steps in the
-    #   test case.
+    # test case.
     @pytest.mark.asyncio
     async def test_get_test_execution_full_parse(self):
         payload_expected_keys = [
