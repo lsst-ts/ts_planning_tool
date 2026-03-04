@@ -1,0 +1,32 @@
+{% set data= load_setup_py_data() %}
+
+package:
+    name: ts-planning-tool
+    version: {{ data.get('version') }}
+
+source:
+    path: ../
+
+build:
+    noarch: python
+    script: {{ PYTHON }} -m pip install --no-deps --ignore-installed .
+    string: "py{{ PY_VER | replace('.', '') }}{{ PKG_HASH }}_{{ PKG_BUILDNUM }}"
+
+test:
+    requires:
+        - ts-conda-build =0.5
+    source_files:
+        - pyproject.toml
+        - python
+        - tests
+    commands:
+        - pytest
+
+requirements:
+    host:
+        - pip
+        - python {{ python }}
+        - setuptools >={{ setuptools}}
+        - setuptools_scm ={{ setuptools_scm}}
+    run:
+        - python {{ python }}
