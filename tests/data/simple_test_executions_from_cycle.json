@@ -1,0 +1,231 @@
+{
+    "next": "https://api.zephyrscale.smartbear.com/v2/testexecutions?testCycle=BLOCK-R21&startAt=5&maxResults=5",
+    "startAt": 0,
+    "maxResults": 5,
+    "total": 15,
+    "isLast": false,
+    "values": [
+        {
+            "id": 910935431,
+            "key": "BLOCK-E210",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "testCase": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T18/versions/1",
+                "id": 158362273
+            },
+            "environment": {
+                "id": 6824992,
+                "self": "https://api.zephyrscale.smartbear.com/v2/environments/6824992"
+            },
+            "jiraProjectVersion": null,
+            "testExecutionStatus": {
+                "id": 6360084,
+                "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360084"
+            },
+            "actualEndDate": "2024-05-29T21:50:27Z",
+            "estimatedTime": 7200000,
+            "executionTime": null,
+            "executedById": "712020:bddc005b-bd49-4f8b-902f-71529b76dd67",
+            "assignedToId": "63f3c6b4d6722987749c9705",
+            "comment": "Scheduler CSC failed to enable. &nbsp;<a href=\"https://rubinobs.atlassian.net/browse/OBS-149\" target=\"_blank\">OBS-149</a><br><div><div><form><div><br></div></form></div></div>",
+            "automated": false,
+            "testCycle": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22355742",
+                "id": 22355742
+            },
+            "customFields": {
+                "HV on?": false,
+                "Room light on?": false,
+                "ITL sequencer config": null,
+                "E2V sequencer config ": null,
+                "Corner sequencer config": null
+            },
+            "links": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/910935431/links",
+                "issues": []
+            }
+        },
+        {
+            "id": 910935433,
+            "key": "BLOCK-E212",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "testCase": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T20/versions/1",
+                "id": 158362680
+            },
+            "environment": {
+                "id": 6824992,
+                "self": "https://api.zephyrscale.smartbear.com/v2/environments/6824992"
+            },
+            "jiraProjectVersion": null,
+            "testExecutionStatus": {
+                "id": 6360081,
+                "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+            },
+            "actualEndDate": "2024-05-24T17:16:55Z",
+            "estimatedTime": 14400000,
+            "executionTime": null,
+            "executedById": null,
+            "assignedToId": "63f3c6b4d6722987749c9705",
+            "comment": null,
+            "automated": false,
+            "testCycle": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22355742",
+                "id": 22355742
+            },
+            "customFields": {
+                "HV on?": false,
+                "Room light on?": false,
+                "ITL sequencer config": null,
+                "E2V sequencer config ": null,
+                "Corner sequencer config": null
+            },
+            "links": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/910935433/links",
+                "issues": []
+            }
+        },
+        {
+            "id": 910935434,
+            "key": "BLOCK-E213",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "testCase": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T22/versions/1",
+                "id": 159177704
+            },
+            "environment": {
+                "id": 6943099,
+                "self": "https://api.zephyrscale.smartbear.com/v2/environments/6943099"
+            },
+            "jiraProjectVersion": null,
+            "testExecutionStatus": {
+                "id": 6360084,
+                "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360084"
+            },
+            "actualEndDate": "2024-05-30T04:43:08Z",
+            "estimatedTime": null,
+            "executionTime": 387000,
+            "executedById": "712020:bddc005b-bd49-4f8b-902f-71529b76dd67",
+            "assignedToId": "63f3c6b4d6722987749c9705",
+            "comment": null,
+            "automated": false,
+            "testCycle": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22355742",
+                "id": 22355742
+            },
+            "customFields": {
+                "HV on?": false,
+                "Room light on?": false,
+                "ITL sequencer config": null,
+                "E2V sequencer config ": null,
+                "Corner sequencer config": null
+            },
+            "links": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/910935434/links",
+                "issues": []
+            }
+        },
+        {
+            "id": 910935435,
+            "key": "BLOCK-E214",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "testCase": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T19/versions/1",
+                "id": 158362525
+            },
+            "environment": {
+                "id": 6824994,
+                "self": "https://api.zephyrscale.smartbear.com/v2/environments/6824994"
+            },
+            "jiraProjectVersion": null,
+            "testExecutionStatus": {
+                "id": 6360081,
+                "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+            },
+            "actualEndDate": "2024-05-24T17:16:55Z",
+            "estimatedTime": 28800000,
+            "executionTime": null,
+            "executedById": null,
+            "assignedToId": "63f3c6b4d6722987749c9705",
+            "comment": null,
+            "automated": false,
+            "testCycle": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22355742",
+                "id": 22355742
+            },
+            "customFields": {
+                "HV on?": false,
+                "Room light on?": false,
+                "ITL sequencer config": null,
+                "E2V sequencer config ": null,
+                "Corner sequencer config": null
+            },
+            "links": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/910935435/links",
+                "issues": []
+            }
+        },
+        {
+            "id": 910935436,
+            "key": "BLOCK-E215",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "testCase": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T17/versions/1",
+                "id": 158362050
+            },
+            "environment": {
+                "id": 6824992,
+                "self": "https://api.zephyrscale.smartbear.com/v2/environments/6824992"
+            },
+            "jiraProjectVersion": null,
+            "testExecutionStatus": {
+                "id": 6360084,
+                "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360084"
+            },
+            "actualEndDate": "2024-05-29T19:37:03Z",
+            "estimatedTime": 3600000,
+            "executionTime": null,
+            "executedById": "712020:b87bdad6-55b7-4159-96a8-db45a31ac685",
+            "assignedToId": "63f3c6b4d6722987749c9705",
+            "comment": null,
+            "automated": false,
+            "testCycle": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22355742",
+                "id": 22355742
+            },
+            "customFields": {
+                "HV on?": false,
+                "Room light on?": false,
+                "ITL sequencer config": null,
+                "E2V sequencer config ": null,
+                "Corner sequencer config": null
+            },
+            "links": {
+                "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/910935436/links",
+                "issues": []
+            }
+        }
+    ],
+    "project": "BLOCK",
+    "testCase": "BLOCK-T17",
+    "environment": "1. Daytime",
+    "testExecutionStatus": "Fail",
+    "testCycle": "BLOCK-R21",
+    "executedById": "Karla Aubel",
+    "assignedToId": "Erik Dennihy"
+}

@@ -1,0 +1,40 @@
+{
+    "id": 22355742,
+    "key": "BLOCK-R21",
+    "name": "2024-05-29 Night Plan",
+    "project": "BLOCK",
+    "jiraProjectVersion": null,
+    "status": "Done",
+    "folder": null,
+    "description": "Primary focus for tonight will be Calibrations Rehearsal.<br />The expectation is that all the calibrations (standard and non-standard) should be completed before sunset.<br /><br />We know that AuxTel Pointing model has issues.<br />So the priority is to collect data on the calibration tests, other than going on Sky.<br /><br />This means that, even if you need to run calibration test cases overnight, do it.<br />Let's try to get data for BLOCK-T22 and BLOCK-T24.<br /><br />Run BLOCK-T23 only if there are no other options for the night (neither on Sky, nor closed dome). ",
+    "plannedStartDate": "2024-05-29T07:00:00Z",
+    "plannedEndDate": "2024-05-29T07:00:00Z",
+    "owner": "Bruno Quint",
+    "customFields": {
+        "Night Support": "Tiago Ribeiro",
+        "End of Night - TMA El position": "",
+        "TMA walk around - comments": "No comment",
+        "TMA walk around - performed by": "",
+        "TMA walk around done": false,
+        "Night Summary": "The following report belong to the AuxTel Night Log. \u00a0<br /><br />During the observing activities, we encountered several problems. First, the Scheduler failed to enable due to missing data in the EFD (OBS-149).\u00a0<br />In the daytime calibration section, we initially ran \"latiss_daily_calibrations\" which not passed the sequence, the script did not turn on the lamp, so we ran auxtel/calibration/power_on_alcalsys.py to resolve this step and calibrations were completed<br />Then AuxTel were prepared for on-sky tests with Tiago, who took over to perform the pointing test. Unfortunately test was not successful. Following the plan for tonight we prepared AuxTel for AuxTel linearity scan 2/3 but it resulted in a ValueError due to a discrepancy in exposure time parameters (check LogError on Rolex or Zephyr), also the AuxTel linearity scan 1/3 test was executed given the same discrepancy error. AuxTel was prepare for the Filter Scans Block and during the the test the Electrometer:201 went to FAULT, The filter scan BLOCK-T22 was rerun with a patch implemented by Tiago, which ignore the error and automatically re-enable the electrometer if it faults again.<br />Meanwhile, ComCam Calibrations for CR1 was not possible to enable ComCam with the script maintel/enable_comcam.py, execution fails.<br /><br />ToDo:<br />- Ensure the lamp functionality in latiss_daily_calibrations.<br />- Resolve discrepancy in AuxTel Linearity Scan parameters.<br />- Guarantee proper enabling of ComCam for testing.<br />- Monitoring the electrometer with the implemented patch.?<br />Final telescope status:<br />AuxTel shutdown: ATTCS parameters in standby.<br />AuxTel at park position. (az:0.0 deg - el:80 deg)<br />Dome park position. (az:285 deg)<br />LATISS standby.<br />Additional resources:<br />- OBS fault reports from last 24 hours:\u00a0<a href=\"https://rubinobs.atlassian.net/jira/software/c/projects/OBS/boards/232\">https://rubinobs.atlassian.net/jira/software/c/projects/OBS/boards/232</a><br />- Link to AuxTel Log Confluence Page:\u00a0<br />- Link to detailed night log entries (requires Summit VPN):\u00a0<a href=\"https://imsva91-ctp.trendmicro.com/wis/clicktime/v1/query?url=https%3a%2f%2fsummit%2dlsp.lsst.codes%2frolex%3flog%5fdate%3d2024%2d05%2d29&amp;umid=0F095B51-19A6-2206-AD97-74C585E46F83&amp;auth=f95e8f518a5a1451e680168b3f9df426ddd6fc8e-0ebedde843d397bc1ca4cf715629708acfd2e7f8\">https://imsva91-ctp.trendmicro.com:443/wis/clicktime/v1/query?url=https%3a%2f%2fsummit%2dlsp.lsst.codes%2frolex%3flog%5fdate%3d2024%2d05%2d29&amp;umid=0F095B51-19A6-2206-AD97-74C585E46F83&amp;auth=f95e8f518a5a1451e680168b3f9df426ddd6fc8e-0ebedde843d397bc1ca4cf715629708acfd2e7f8</a><br />Detailed issue report:<br />[{'key': 'OBS-545', 'summary': 'AuxTel pointing behavior degraded', 'time_lost': 0.0, 'reporter': 'Eric Christensen', 'created': '2024-05-29T12:24:29'}]<br />Total obstime loss: 0.0 hours<br /><br />Signed, your friendly neighborhood observers,<br />['Karla Aubel', 'Paulina Venegas']<br />        ",
+        "Night Planner": "Bruno Quint",
+        "End of Night - Power Supply Status": "",
+        "End of Night - TMA Az Position": "0\u00ba",
+        "TMA ready for use?": false,
+        "End of Night - OSS Power Status": ""
+    },
+    "links": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testcycles/22355742/links",
+        "issues": [],
+        "webLinks": [],
+        "testPlans": [
+            {
+                "id": 87871799,
+                "self": "https://api.zephyrscale.smartbear.com/v2/links/87871799",
+                "testPlanId": 644365,
+                "type": "RELATED",
+                "target": "https://rubinobs.atlassian.net/testplans/644365"
+            }
+        ]
+    }
+}

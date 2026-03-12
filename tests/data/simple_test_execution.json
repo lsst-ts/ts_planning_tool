@@ -1,0 +1,36 @@
+{
+    "id": 902085710,
+    "key": "BLOCK-E192",
+    "project": "BLOCK",
+    "testCase": "BLOCK-T21",
+    "environment": "1. Daytime",
+    "jiraProjectVersion": null,
+    "testExecutionStatus": "Pass",
+    "actualEndDate": "2024-05-17T18:07:07Z",
+    "estimatedTime": null,
+    "executionTime": null,
+    "executedById": "Bruno Quint",
+    "assignedToId": "Bruno Quint",
+    "comment": null,
+    "automated": false,
+    "testCycle": "BLOCK-R19",
+    "customFields": {
+        "HV on?": false,
+        "Room light on?": false,
+        "ITL sequencer config": null,
+        "E2V sequencer config ": null,
+        "Corner sequencer config": null
+    },
+    "links": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testexecutions/902085710/links",
+        "issues": [
+            {
+                "self": "https://api.zephyrscale.smartbear.com/v2/links/95535911",
+                "issueId": 211993,
+                "id": 95535911,
+                "target": "https://rubinobs.atlassian.net/rest/api/2/issue/211993",
+                "type": "BLOCKS"
+            }
+        ]
+    }
+}
