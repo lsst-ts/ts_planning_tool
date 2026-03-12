@@ -1,1 +1,0 @@
-Conda packaged the ts_planning_tool project.
