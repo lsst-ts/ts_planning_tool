@@ -30,3 +30,4 @@ requirements:
         - setuptools_scm ={{ setuptools_scm}}
     run:
         - python {{ python }}
+        - aiohttp
