@@ -19,10 +19,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+from .cli import *
+from .zephyr_interface import *
+
 try:
-    from .cli import *
     from .version import *
-    from .zephyr_interface import *
 except ImportError:
     __version__ = "?"
     __repo_version__ = "?"
