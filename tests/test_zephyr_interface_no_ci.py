@@ -23,7 +23,7 @@ import os
 import unittest
 
 import pytest
-from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
+from lsst.ts.planning.tool import ZephyrInterface, load_json_data
 
 # Real data from Zephyr
 ENVIRONMENT = {
@@ -42,9 +42,9 @@ PROJECT = {
     "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001",
 }
 STATUS = {
-    "id": 3940035,
+    "id": 6360083,
     "name": "Pass",
-    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/3940035",
+    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360083",
 }
 TEST_CYCLE = {
     "id": 22355742,
@@ -66,7 +66,6 @@ TEST_CYCLE = {
     reason="Skipping test because JIRA_USERNAME is not defined",
 )
 class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
-
     def setUp(self):
         self.jira_api_token = os.getenv("JIRA_API_TOKEN")
         self.jira_username = os.getenv("JIRA_USERNAME")
@@ -102,7 +101,6 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
 
     @pytest.mark.asyncio
     async def test_get_statuses(self):
-
         payload_expected_keys = [
             "next",
             "startAt",
@@ -117,7 +115,6 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
 
     @pytest.mark.asyncio
     async def test_get_test_case(self):
-
         payload_expected_keys = [
             "id",
             "key",
@@ -144,8 +141,40 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertListEqual(list(test_case.keys()), payload_expected_keys)
 
     @pytest.mark.asyncio
-    async def test_get_test_cycle(self):
+    async def test_get_test_case_full(self):
+        payload_expected_keys = [
+            "id",
+            "key",
+            "name",
+            "project",
+            "createdOn",
+            "objective",
+            "precondition",
+            "estimatedTime",
+            "labels",
+            "component",
+            "priority",
+            "status",
+            "folder",
+            "owner",
+            "testScript",
+            "customFields",
+            "links",
+        ]
 
+        test_case_key = "BLOCK-T21"
+        test_case = await self.zapi.get_test_case(test_case_key, parse="full")
+        json_data = load_json_data("full_test_case.json", os.path.dirname(__file__))
+        self.assertEqual(test_case["key"], test_case_key)
+        self.assertListEqual(list(test_case.keys()), payload_expected_keys)
+        self.assertListEqual(list(test_case.keys()), list(json_data.keys()))
+        self.assertEqual(
+            len(test_case["testScript"]["values"]),
+            len(json_data["testScript"]["values"]),
+        )
+
+    @pytest.mark.asyncio
+    async def test_get_test_cycle(self):
         payload_expected_keys = [
             "id",
             "key",
@@ -169,7 +198,6 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
 
     @pytest.mark.asyncio
     async def test_get_steps_in_test_case(self):
-
         payload_expected_keys = [
             "next",
             "startAt",
@@ -188,8 +216,24 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         )
 
     @pytest.mark.asyncio
-    async def test_get_test_execution(self):
+    async def test_get_steps_in_test_execution(self):
+        payload_expected_keys = [
+            "next",
+            "startAt",
+            "maxResults",
+            "total",
+            "isLast",
+            "values",
+        ]
 
+        test_execution_key = "BLOCK-E192"
+        test_execution_steps = await self.zapi.get_steps_in_test_execution(
+            test_execution_key
+        )
+        self.assertListEqual(list(test_execution_steps.keys()), payload_expected_keys)
+
+    @pytest.mark.asyncio
+    async def test_get_test_execution(self):
         payload_expected_keys = [
             "id",
             "key",
@@ -215,9 +259,42 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
         self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
         self.assertEqual(test_execution["key"], test_execution_id)
 
+    # WARNING: This test will fail if you change the numner of steps in the
+    # test case.
+    @pytest.mark.asyncio
+    async def test_get_test_execution_full_parse(self):
+        payload_expected_keys = [
+            "id",
+            "key",
+            "project",
+            "testCase",
+            "environment",
+            "jiraProjectVersion",
+            "testExecutionStatus",
+            "actualEndDate",
+            "estimatedTime",
+            "executionTime",
+            "executedById",
+            "assignedToId",
+            "comment",
+            "automated",
+            "testCycle",
+            "customFields",
+            "links",
+            "testScript",
+        ]
+
+        # If you update the test case, make sure you create a new test
+        # execution and update the key below.
+        test_execution_id = "BLOCK-E306"
+        test_execution = await self.zapi.get_test_execution(
+            test_execution_id, parse="full"
+        )
+        self.assertListEqual(list(test_execution.keys()), payload_expected_keys)
+        self.assertEqual(test_execution["key"], test_execution_id)
+
     @pytest.mark.asyncio
     async def test_list_test_executions(self):
-
         payload_expected_keys = [
             "next",
             "startAt",
