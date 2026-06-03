@@ -23,8 +23,10 @@ __all__ = [
     "ZephyrInterface",
 ]
 
+import asyncio
 import logging
 import re
+from datetime import datetime
 
 import aiohttp
 from aiohttp import BasicAuth
@@ -50,7 +52,8 @@ class ZephyrInterface:
         https://id.atlassian.com/manage-profile/security/api-tokens
 
     Use the URL below to create an API token for Zephyr Scale:
-        https://rubinobs.atlassian.net/plugins/servlet/ac/com.kanoah.test-manager/api-access-tokens
+        https://rubinobs.atlassian.net/plugins/servlet/ac/\
+            com.kanoah.test-manager/api-access-tokens
 
     Then, store the API tokens inside the JIRA_API_TOKEN and ZEPHYR_API_TOKEN
     environment variables. You will also want to store your username in the
@@ -133,33 +136,91 @@ class ZephyrInterface:
 
         return await self.get(endpoint, params)
 
-    async def get_steps_in_test_case(self, test_case_key):
+    async def get_steps_from_call_to_test(self, json_steps: list):
+        """
+        Get the steps from a call to a test case.
+
+        Parameters
+        ----------
+        json_steps : list
+            A list containing the steps of a test case.
+
+        Returns
+        -------
+        list
+            A list containing the steps of the test case.
+        """
+        steps = []
+        for single_step in json_steps:
+            if "testCase" in single_step and single_step["testCase"] is not None:
+                self.log.info(
+                    f"  Parsing sub-steps from test case:"
+                    f"  {single_step['testCase']['testCaseKey']}"
+                )
+                # Call get_steps_in_test_case with call_to_test=False to avoid
+                # infinite recursion.
+                sub_steps = await self.get_steps_in_test_case(
+                    single_step["testCase"]["testCaseKey"], call_to_test=False
+                )
+                steps.extend(sub_steps["values"])
+            else:
+                steps.append(single_step)
+        return steps
+
+    async def get_steps_in_test_case(self, key, call_to_test=False):
         """
         Get all the steps in a test case.
 
         Parameters
         ----------
-        test_case_key : str
-            The key of the test case.
+        test_key : str
+            The key of the test case or test execution.
+        call_to_test : bool
+            Merge steps from test cases that are called from the main test
+            case.
 
         Returns
         -------
         dict
             A dictionary containing the steps of the test case.
 
-        Note
-        ----
-        It seems that the json payload from tests steps does not need any
-        parsing. The payload is already in a good format.
-
         See also
         --------
         * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
                 #tag/Test-Cases/operation/getTestCaseTestSteps
         """
-        endpoint = f"testcases/{test_case_key}/teststeps"
-        self.log.info(f"Querying steps in test case {test_case_key}")
-        return await self.get(endpoint)
+        endpoint = f"testcases/{key}/teststeps"
+        payload = await self.get(endpoint)
+
+        if call_to_test:
+            payload["values"] = await self.get_steps_from_call_to_test(
+                payload["values"]
+            )
+
+        return payload
+
+    async def get_steps_in_test_execution(self, test_key):
+        """
+        Get all the steps in a test execution.
+
+        Parameters
+        ----------
+        test_key : str
+            The key of the test case or test execution.
+
+        Returns
+        -------
+        dict
+            A dictionary containing the steps of the test case.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Executions/operation/getTestExecutionTestSteps
+        """
+        endpoint = f"testexecutions/{test_key}/teststeps"
+        payload = await self.get(endpoint)
+        return payload
 
     async def get_test_case(self, test_case_key, parse="raw"):
         """
@@ -202,10 +263,12 @@ class ZephyrInterface:
             "status": "name",
         }
 
-        for key, val in parse_fields.items():
-            test_case[key] = await self.parse(test_case[key])
-            if test_case[key] and parse == "simple":
-                test_case[key] = test_case[key][val]
+        tasks = [
+            self.parse(test_case[key], parse=parse) for key, val in parse_fields.items()
+        ]
+        parsed_fields = await asyncio.gather(*tasks)
+        for (key, _), parsed in zip(parse_fields.items(), parsed_fields):
+            test_case[key] = parsed
 
         parse_users = ["owner"]
 
@@ -217,7 +280,7 @@ class ZephyrInterface:
         if parse == "full":
             test_case["testScript"] = test_case[
                 "testScript"
-            ] | await self.get_steps_in_test_case(test_case_key)
+            ] | await self.get_steps_in_test_case(test_case_key, call_to_test=True)
 
         return test_case
 
@@ -323,7 +386,6 @@ class ZephyrInterface:
             async with session.get(
                 url=url, headers=headers, params=query_parameters
             ) as response:
-
                 test_cycles = await response.json()
                 # We are only interested in the list of test cycles
                 test_cycles = test_cycles["values"]
@@ -385,6 +447,8 @@ class ZephyrInterface:
             "project": "key",
         }
 
+        t_start = datetime.now()
+        self.log.info(f"Parsing information for {test_execution_key} - START")
         for key, val in parse_fields.items():
             test_execution[key] = await self.parse(test_execution[key])
             if test_execution[key] and parse == "simple":
@@ -397,30 +461,32 @@ class ZephyrInterface:
             if test_execution[user] and parse == "simple":
                 test_execution[user] = test_execution[user]["displayName"]
 
+        # Fill the payload with the test execution steps
+        if parse == "full":
+            # Get the test execution and test case steps, they should have the
+            # same number of elements (steps).
+            test_execution_steps = await self.get_steps_in_test_execution(
+                test_execution_key
+            )
+            test_case_steps = await self.get_steps_in_test_case(
+                test_execution["testCase"]["key"], call_to_test=True
+            )
+            assert len(test_execution_steps["values"]) == len(test_case_steps["values"])
+
+            # Loop for each step to merge the information in the json payload
+            for exec_step, case_step in zip(
+                test_execution_steps["values"], test_case_steps["values"]
+            ):
+                exec_step["inline"] = exec_step["inline"] | case_step["inline"]
+
+            test_execution["testScript"] = test_execution_steps
+
+        delta_t = datetime.now() - t_start
+        self.log.info(
+            f"Parsing information for {test_execution_key} in {delta_t} s - DONE"
+        )
+
         return test_execution
-
-    async def get_test_execution_steps(self, test_execution_key):
-        """
-        Get all the steps in a test execution.
-
-        Parameters
-        ----------
-        test_execution_key : str
-            The key of the test execution.
-
-        Returns
-        -------
-        dict
-            A dictionary containing the steps of the test execution.
-
-        See also
-        --------
-        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
-                #tag/Test-Executions/operation/getTestExecutionTestSteps
-        """
-        endpoint = f"testexecutions/{test_execution_key}/teststeps"
-        self.log.debug(f"Querying steps in test execution {test_execution_key}")
-        return await self.get(endpoint)
 
     async def list_test_executions(
         self, test_key, max_results=20, only_last=False, parse="raw"
@@ -462,8 +528,10 @@ class ZephyrInterface:
         """
         if re.search(r"(.+-R[0-9]+)", test_key):
             param_key = "testCycle"
+            self.log.info(f"Querying test executions in test cycle {test_key}")
         elif re.search(r"(.+-T[0-9]+)", test_key):
             param_key = "testCase"
+            self.log.info(f"Querying test executions in test case {test_key}")
         else:
             raise ValueError("Invalid test key")
 
@@ -488,17 +556,18 @@ class ZephyrInterface:
 
         parse_users = ["executedById", "assignedToId"]
 
+        self.log.debug(f"Found {len(response['values'])} test executions")
         for test_execution in response["values"]:
             self.log.info(f"Querying test execution {test_execution['key']}")
             for key, val in parse_fields.items():
-                response[key] = await self.parse(test_execution[key])
-                if response[key] and parse == "simple":
-                    response[key] = response[key][val]
+                test_execution[key] = await self.parse(test_execution[key])
+                if test_execution[key] and parse == "simple":
+                    test_execution[key] = test_execution[key][val]
 
             for user in parse_users:
-                response[user] = await self.get_user_name(test_execution[user])
-                if response[user] and parse == "simple":
-                    response[user] = response[user]["displayName"]
+                test_execution[user] = await self.get_user_name(test_execution[user])
+                if test_execution[user] and parse == "simple":
+                    test_execution[user] = test_execution[user]["displayName"]
 
         return response
 
@@ -526,7 +595,7 @@ class ZephyrInterface:
         represented as a single string. This method can handle both cases.
         """
         if user is None:
-            self.log.warn("Received `user` as None. Returning None.")
+            self.log.warning("Received `user` as None. Returning None.")
             return None
 
         url = self.jira_base_url + "user"
@@ -542,15 +611,14 @@ class ZephyrInterface:
             raise_for_status=True,
         ) as session:
             async with session.get(url, params=query_parameters) as response:
-
                 user_details = await response.json()
-                self.log.info(
+                self.log.debug(
                     f"Token is working fine. User display name: {user_details['displayName']}"
                 )
 
         return json_obj | user_details
 
-    async def parse(self, json_obj):
+    async def parse(self, json_obj, parse="full"):
         """
         Generic method to parse get requests to the Zephyr Scale API.
 
@@ -558,20 +626,20 @@ class ZephyrInterface:
         ----------
         json_obj : dict
             The JSON object to parse.
-        parse_key : str, optional
-            The key to parse. The default is None. If not None, the method will
-            provide a single value instead of the entire JSON object.
+        parse : string, optional
+            The type of parsing to perform. The default is "full". The other
+            options are "simple" and "full". "full" will parse all the fields
+            in the JSON object and keep existing values. "simple" will strip
+            out existing values and only keep the parsed values.
 
         Returns
         -------
         dict or str or None
             If the JSON object is None, the method will return None.
             Otherwise, it will return a dictionary containing the parsed JSON.
-            If parse_key is not None, the method will return a string with the
-            value extracted from the JSON response.
         """
         if json_obj is None:
-            self.log.warn("Received json_obj as None. Returning None.")
+            self.log.warning("Received json_obj as None. Returning None.")
             return None
 
         if self.zephyr_base_url in json_obj["self"]:
@@ -580,4 +648,8 @@ class ZephyrInterface:
             endpoint = json_obj["self"]
 
         response = await self.get(endpoint)
-        return json_obj | response
+
+        if parse == "simple":
+            return response
+        else:
+            return json_obj | response

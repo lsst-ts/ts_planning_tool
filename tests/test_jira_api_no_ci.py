@@ -17,7 +17,6 @@ JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"
     reason="Skipping test because JIRA_API_TOKEN is not defined",
 )
 class TestJiraAPI(unittest.IsolatedAsyncioTestCase):
-
     def setUp(self):
         self.jira_api_token = os.getenv("JIRA_API_TOKEN")
         self.jira_username = os.getenv("JIRA_USERNAME")
