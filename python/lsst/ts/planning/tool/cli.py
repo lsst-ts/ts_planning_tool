@@ -27,6 +27,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 
 from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
 
@@ -52,10 +53,24 @@ async def get_test_cycle(test_cycle_key, parse="raw", indent=4, **kwargs):
     print(json.dumps(test_cycle, indent=indent))
 
 
-async def get_steps_in_test_case(test_case_key, indent=4, **kwargs):
-    """Get steps in a test case from Zephyr Scale API."""
+async def get_steps(test_key, indent=4, complement=True, **kwargs):
+    """Get steps in a test case or test execution from Zephyr Scale API.
+
+    The test key pattern determines which Zephyr Scale endpoint is queried:
+    a test case (e.g. ``BLOCK-T00``) or a test execution (e.g. ``BLOCK-E000``).
+    """
     zapi = setup_zephyr_interface()
-    test_steps = await zapi.get_steps_in_test_case(test_case_key)
+    if re.search(r"(.+-T[0-9]+)", test_key):
+        test_steps = await zapi.get_steps_in_test_case(
+            test_key, call_to_test=complement
+        )
+    elif re.search(r"(.+-E[0-9]+)", test_key):
+        test_steps = await zapi.get_steps_in_test_execution(test_key)
+    else:
+        raise ValueError(
+            "Invalid test key. Expected a test case (e.g. BLOCK-T00) or a "
+            "test execution (e.g. BLOCK-E000)."
+        )
     print(json.dumps(test_steps, indent=indent))
 
 
@@ -67,11 +82,12 @@ async def get_user(user_id, indent=4, **kwargs):
 
 
 async def list_test_executions(
-    key, indent=4, max_results=5, only_last=False, parse="raw", **kwargs
+    key, indent=4, max_results=5, only_last=False, parse="raw", verbose=False, **kwargs
 ):
     """List test executions for a test cycle or a test case from Zephyr Scale
     API."""
     zapi = setup_zephyr_interface()
+    zapi.log.setLevel(logging.DEBUG if verbose else logging.ERROR)
     test_executions = await zapi.list_test_executions(
         key, max_results=max_results, only_last=only_last, parse=parse
     )
@@ -117,8 +133,12 @@ def run_zapi_command_line():
     )
 
     parse_test_steps = sub_parsers_get.add_parser("steps")
-    parse_test_steps.set_defaults(func=get_steps_in_test_case)
-    parse_test_steps.add_argument("test_case_key", type=str)
+    parse_test_steps.set_defaults(func=get_steps)
+    parse_test_steps.add_argument(
+        "test_key",
+        type=str,
+        help="Key associated with a test case (e.g. BLOCK-T00) or a test execution (e.g. BLOCK-E000).",
+    )
     parse_test_steps.add_argument("-i", "--indent", type=int, default=4)
 
     parse_test_steps = sub_parsers_get.add_parser("user")
@@ -154,9 +174,47 @@ def run_zapi_command_line():
     parse_test_executions.add_argument(
         "-p", "--parse", choices=["raw", "full", "simple"], default="raw"
     )
+    parse_test_executions.add_argument(
+        "-v", "--verbose", action="store_true", help="Print verbose output."
+    )
 
     args = parser.parse_args()
     asyncio.run(args.func(**vars(args)))
+
+
+def setup_logging():
+    """
+    Set up logging for the ZephyrInterface.
+    This function configures a logger named "ZephyrInterface" to log messages
+    at the DEBUG level. It creates a console handler that outputs log messages
+    to the standard output stream and formats the log messages with a specific
+    format that includes the timestamp, logger name, log level, and message.
+
+    Returns
+    -------
+    logging.Logger
+        The configured logger instance.
+    """
+    log_level = logging.DEBUG
+    logger = logging.getLogger("ZephyrInterface")
+    logger.setLevel(log_level)
+
+    # Create console handler and set level to debug
+    ch = logging.StreamHandler()
+    ch.setLevel(log_level)
+
+    # Create formatter
+    formatter = logging.Formatter(
+        "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    )
+
+    # Add formatter to ch
+    ch.setFormatter(formatter)
+
+    # Add ch to logger
+    logger.addHandler(ch)
+
+    return logger
 
 
 def setup_zephyr_interface():
@@ -178,9 +236,7 @@ def setup_zephyr_interface():
     #   We need to investigate why the log level cannot be changed.
     #   It works if we change the log level to ERROR. But it does not work
     #   if we change it to DEBUG or INFO.
-    log_level = logging.ERROR
-    logger = logging.getLogger("ZephyrInterface")
-    logger.setLevel(log_level)
+    logger = setup_logging()
 
     zapi = ZephyrInterface(
         zephyr_api_token=zephyr_token,
