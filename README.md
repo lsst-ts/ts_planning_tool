@@ -25,6 +25,48 @@ These tokens should be passed directly to the `ZephyrInterface` class, together 
 By default, the URLs are the ones used by Rubin Observatory.
 
 
+### Getting your Zephyr Scale API Token
+
+To generate your `ZEPHYR_API_TOKEN`:
+
+1. Click on your profile at the top right corner. A small window opens showing
+   **Profile**, **Account settings**, **Team**, **Slack**, **Assigned items**,
+   and **Zephyr Scale API access tokens**.
+2. Click on **Zephyr Scale API access tokens**. This takes you to a new page.
+3. Click on **Create access token**. This generates a new token, shown as a long string.
+4. Copy the token (it is copied to your clipboard) and close the dialog.
+
+The token is valid for one year by default.
+
+
+### Setting the Environment Variables
+
+A convenient way to define the required environment variables is to keep them in a
+separate file that you source from your shell configuration. For example, create a
+file called `~/.zapi`:
+
+```zsh
+# ts_planning_tool / Zephyr Scale API credentials
+export ZEPHYR_API_TOKEN="paste-your-zephyr-token-here"
+export JIRA_API_TOKEN="paste-your-jira-token-here"
+export JIRA_USERNAME="your.email@example.com"
+```
+
+Restrict its permissions so only you can read it, since it holds secrets:
+
+```zsh
+chmod 600 ~/.zapi
+```
+
+Then source it from your `~/.zshrc` so it loads in every new terminal:
+
+```zsh
+[ -f ~/.zapi ] && source ~/.zapi
+```
+
+Keep this file private and never commit it to a repository.
+
+
 ### Unit Tests
 
 This module contains unit tests inside `tests` folder.
