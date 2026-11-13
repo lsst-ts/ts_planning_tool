@@ -368,6 +368,46 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
             },
         )
 
+    @patch("aiohttp.ClientSession.put")
+    @patch("aiohttp.ClientSession.get")
+    async def test_set_test_cycle_status(self, mock_get, mock_put):
+        test_cycle = load_json_data("test_cycle.json")
+        statuses = {
+            "isLast": True,
+            "values": [
+                {"id": 6360086, "name": "Not Executed"},
+                {"id": 7036335, "name": "Cancelled"},
+            ],
+        }
+        responses = [MagicMock(), MagicMock()]
+        responses[0].json = AsyncMock(return_value=test_cycle)
+        responses[1].json = AsyncMock(return_value=statuses)
+        mock_get.return_value.__aenter__.side_effect = responses
+        mock_put.return_value.__aenter__.return_value = self._post_response(200, None)
+
+        await self.zapi.set_test_cycle_status("BLOCK-R21", "Cancelled")
+
+        payload = mock_put.call_args.kwargs["json"]
+        self.assertEqual(payload["status"], {"id": 7036335})
+        self.assertNotIn("links", payload)
+        # Everything else is sent back unchanged, since PUT clears what is
+        # left out.
+        for key, value in test_cycle.items():
+            if key not in ("status", "links"):
+                self.assertEqual(payload[key], value)
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_set_test_cycle_status_unknown(self, mock_get):
+        responses = [MagicMock(), MagicMock()]
+        responses[0].json = AsyncMock(return_value=load_json_data("test_cycle.json"))
+        responses[1].json = AsyncMock(
+            return_value={"isLast": True, "values": [{"id": 1, "name": "Done"}]}
+        )
+        mock_get.return_value.__aenter__.side_effect = responses
+
+        with self.assertRaises(ValueError):
+            await self.zapi.set_test_cycle_status("BLOCK-R21", "Cancelled")
+
     @patch("aiohttp.ClientSession.post")
     async def test_add_test_cases_to_cycle(self, mock_post):
         mock_post.return_value.__aenter__.side_effect = [

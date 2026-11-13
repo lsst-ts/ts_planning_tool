@@ -26,6 +26,7 @@ __all__ = [
 ]
 
 import asyncio
+import json
 import logging
 import re
 from datetime import datetime, timezone
@@ -261,6 +262,40 @@ class ZephyrInterface:
             If the API answers with an error. Its message includes the body
             of the answer, where Zephyr Scale explains what was wrong.
         """
+        return await self._write("post", endpoint, payload, max_retries)
+
+    async def put(self, endpoint, payload, max_retries=3):
+        """
+        Generic method to make HTTP PUT requests to the Zephyr Scale API and
+        return the response payload, if any.
+
+        Zephyr Scale PUT requests replace the whole entity: fields left out
+        of `payload` are cleared. Read the entity first and change only what
+        you need.
+
+        Parameters
+        ----------
+        endpoint : str
+            The endpoint, relative to the Zephyr Scale base URL.
+        payload : dict
+            The JSON body of the request.
+        max_retries : int, optional
+            How many times to retry after a `429` answer.
+
+        Returns
+        -------
+        dict or None
+            The JSON body of the response, or None if it is empty.
+
+        Raises
+        ------
+        aiohttp.ClientResponseError
+            If the API answers with an error, as in `post`.
+        """
+        return await self._write("put", endpoint, payload, max_retries)
+
+    async def _write(self, method, endpoint, payload, max_retries):
+        """Send a POST or PUT request; see `post`."""
         url = self.zephyr_base_url + endpoint
         headers = {
             "Authorization": f"Bearer {self.zephyr_api_token}",
@@ -269,14 +304,16 @@ class ZephyrInterface:
 
         for attempt in range(max_retries + 1):
             async with aiohttp.ClientSession(headers=SESSION_HEADERS) as session:
-                async with session.post(url, headers=headers, json=payload) as response:
+                send = getattr(session, method)
+                async with send(url, headers=headers, json=payload) as response:
                     if response.status == 429 and attempt < max_retries:
                         try:
                             delay = float(response.headers.get("Retry-After", ""))
                         except ValueError:
                             delay = 2**attempt
                         self.log.warning(
-                            f"Rate limited on POST {endpoint}; retrying in {delay} s"
+                            f"Rate limited on {method.upper()} {endpoint}; "
+                            f"retrying in {delay} s"
                         )
                         await asyncio.sleep(delay)
                         continue
@@ -291,7 +328,8 @@ class ZephyrInterface:
                             headers=response.headers,
                         )
 
-                    return await response.json()
+                    body = await response.text()
+                    return json.loads(body) if body.strip() else None
 
     async def get_list_of_statuses(self, status_type=None, max_results=20):
         """
@@ -1019,6 +1057,47 @@ class ZephyrInterface:
         response = await self.post("testcycles", payload)
         self.log.info(f"Created test cycle {response.get('key')}: {name!r}")
         return response
+
+    async def set_test_cycle_status(self, test_cycle_key, status_name):
+        """
+        Change the status of a test cycle, e.g. to `Cancelled`.
+
+        The update request replaces the whole test cycle, so this reads the
+        test cycle and sends it back with only the status changed.
+
+        Parameters
+        ----------
+        test_cycle_key : str
+            The key of the test cycle.
+        status_name : str
+            The name of a `TEST_CYCLE` status of the project.
+
+        Raises
+        ------
+        ValueError
+            If the project has no test cycle status with that name.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Cycles/operation/updateTestCycle
+        """
+        test_cycle = await self.get(f"testcycles/{test_cycle_key}")
+        project_key = test_cycle_key.split("-R")[0]
+        statuses = await self.get_all(
+            "statuses", {"projectKey": project_key, "statusType": "TEST_CYCLE"}
+        )
+        matches = [status for status in statuses if status["name"] == status_name]
+        if not matches:
+            names = [status["name"] for status in statuses]
+            raise ValueError(
+                f"Unknown test cycle status {status_name!r}; use one of {names}"
+            )
+
+        payload = {key: value for key, value in test_cycle.items() if key != "links"}
+        payload["status"] = {"id": matches[0]["id"]}
+        await self.put(f"testcycles/{test_cycle_key}", payload)
+        self.log.info(f"Set test cycle {test_cycle_key} to {status_name!r}")
 
     async def add_test_cases_to_cycle(
         self, test_cycle_key, test_cases, status_name="Not Executed"
