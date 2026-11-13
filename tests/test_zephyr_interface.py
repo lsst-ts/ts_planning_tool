@@ -29,6 +29,14 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self.zapi.jira_api_token, self.jira_api_token)
         self.assertEqual(self.zapi.zephyr_api_token, self.zephyr_api_token)
 
+    def test_jira_login(self):
+        self.zapi.jira_username = "jdoe@example.org"
+        self.assertEqual(self.zapi.jira_login, "jdoe@example.org")
+        self.zapi.jira_username = "jdoe"
+        self.assertEqual(self.zapi.jira_login, "jdoe@lsst.org")
+        self.zapi.jira_username = None
+        self.assertIsNone(self.zapi.jira_login)
+
     @patch("aiohttp.ClientSession.get")
     async def test_get_list_of_statuses(self, mock_get):
         payload_expected_keys = [
@@ -208,6 +216,115 @@ class TestZephyrInterface(unittest.IsolatedAsyncioTestCase):
         self.assertListEqual(
             list(test_executions["values"][0].keys()), values_expected_keys
         )
+
+    @staticmethod
+    def _page(values, start_at, max_results, total):
+        """Build a mock response holding one page of a paginated payload."""
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(
+            return_value={
+                "next": None,
+                "startAt": start_at,
+                "maxResults": max_results,
+                "total": total,
+                "isLast": start_at + len(values) >= total,
+                "values": values,
+            }
+        )
+        return mock_response
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_get_all(self, mock_get):
+        # The server answers with a page size (2) smaller than requested (100).
+        mock_get.return_value.__aenter__.side_effect = [
+            self._page([1, 2], 0, 2, 5),
+            self._page([3, 4], 2, 2, 5),
+            self._page([5], 4, 2, 5),
+        ]
+
+        values = await self.zapi.get_all("testexecutions", {"testCycle": "BLOCK-R21"})
+
+        self.assertListEqual(values, [1, 2, 3, 4, 5])
+        requested = [
+            (call.kwargs["params"]["startAt"], call.kwargs["params"]["maxResults"])
+            for call in mock_get.call_args_list
+        ]
+        self.assertListEqual(requested, [(0, 100), (2, 2), (4, 2)])
+        for call in mock_get.call_args_list:
+            self.assertEqual(call.kwargs["params"]["testCycle"], "BLOCK-R21")
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_get_all_stops_on_empty_page(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(
+            return_value={"startAt": 0, "maxResults": 10, "isLast": False, "values": []}
+        )
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        self.assertListEqual(await self.zapi.get_all("testexecutions"), [])
+        self.assertEqual(mock_get.call_count, 1)
+
+    @patch("aiohttp.ClientSession.post")
+    async def test_post(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(return_value={"id": 1, "key": "BLOCK-R999"})
+        mock_post.return_value.__aenter__.return_value = mock_response
+
+        payload = {"projectKey": "BLOCK", "name": "A test cycle"}
+        response = await self.zapi.post("testcycles", payload)
+
+        self.assertEqual(response["key"], "BLOCK-R999")
+        args, kwargs = mock_post.call_args
+        self.assertEqual(args[0], self.zapi.zephyr_base_url + "testcycles")
+        self.assertEqual(kwargs["json"], payload)
+        self.assertEqual(
+            kwargs["headers"]["Authorization"], f"Bearer {self.zephyr_api_token}"
+        )
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_list_test_cases_in_cycle(self, mock_get):
+        executions = load_json_data("test_executions.json")["values"]
+        # Split the recorded payload in two pages and repeat one test case, to
+        # check both the pagination and the de-duplication.
+        executions.append(executions[0])
+        total = len(executions)
+        mock_get.return_value.__aenter__.side_effect = [
+            self._page(executions[:10], 0, 10, total),
+            self._page(executions[10:], 10, 10, total),
+        ]
+
+        test_cases = await self.zapi.list_test_cases_in_cycle("BLOCK-R21")
+        test_case_keys = [test_case["key"] for test_case in test_cases]
+
+        expected = []
+        for execution in executions:
+            key = execution["testCase"]["self"].split("/testcases/")[1].split("/")[0]
+            if key not in expected:
+                expected.append(key)
+        self.assertListEqual(test_case_keys, expected)
+        self.assertDictEqual(
+            test_cases[0],
+            {"key": "BLOCK-T18", "version": 1, "environmentId": 6824992},
+        )
+        self.assertLess(len(test_case_keys), total)
+        self.assertEqual(mock_get.call_count, 2)
+
+    @patch("aiohttp.ClientSession.get")
+    async def test_get_environments(self, mock_get):
+        mock_response = MagicMock()
+        mock_response.json = AsyncMock(return_value=load_json_data("environments.json"))
+        mock_get.return_value.__aenter__.return_value = mock_response
+
+        environments = await self.zapi.get_environments()
+
+        names = {environment["name"].strip() for environment in environments}
+        self.assertIn("1. Daytime", names)
+        self.assertIn("8. Closed Dome", names)
+        self.assertEqual(mock_get.call_args.kwargs["params"]["projectKey"], "BLOCK")
+
+    async def test_list_test_cases_in_cycle_invalid_key(self):
+        with self.assertRaises(ValueError):
+            await self.zapi.list_test_cases_in_cycle("BLOCK-T21")
 
     @patch("aiohttp.ClientSession.get")
     async def test_parse(self, mock_get):

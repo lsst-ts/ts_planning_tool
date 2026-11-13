@@ -1,0 +1,159 @@
+import json
+import os
+import unittest
+
+from lsst.ts.planning.tool.cycle_order import (
+    PLACEMENT_RULES,
+    load_template_order,
+    order_template_cases,
+    place_requested_cases,
+)
+
+# Environments of the R505 test cases, as recorded from the API.
+R505_ENVIRONMENTS = {
+    "BLOCK-T17": "AuxTel",
+    "BLOCK-T20": "AuxTel",
+    "BLOCK-T19": "AuxTel",
+    "BLOCK-T594": "1. Daytime",
+    "BLOCK-T529": "1. Daytime",
+    "BLOCK-T250": "1. Daytime",
+    "BLOCK-T145": "1. Daytime",
+    "BLOCK-T144": "1. Daytime",
+    "BLOCK-T51": "1. Daytime",
+    "BLOCK-T3": "1. Daytime",
+    "BLOCK-T4": "1. Daytime",
+    "BLOCK-T70": "1. Daytime",
+    "BLOCK-T239": "2. Late Afternoon",
+    "BLOCK-T658": "2. Late Afternoon",
+    "BLOCK-T245": "3. Early Night",
+    "BLOCK-T625": "3. Early Night",
+    "BLOCK-T624": "6. Night",
+    "BLOCK-T539": "6. Night",
+    "BLOCK-T196": "7. End Night",
+    "BLOCK-T619": "7. End Night",
+    "BLOCK-T242": "7. End Night",
+    "BLOCK-T664": "7. End Night",
+}
+
+
+def load_env_index():
+    filepath = os.path.join(os.path.dirname(__file__), "data", "environments.json")
+    with open(filepath, "r") as file:
+        environments = json.load(file)["values"]
+    return {env["name"].strip(): env["index"] for env in environments}
+
+
+def keys(cases):
+    return [case["key"] for case in cases]
+
+
+class TestCycleOrder(unittest.TestCase):
+    def setUp(self):
+        self.env_index = load_env_index()
+        self.order = load_template_order()
+        self.r505 = [
+            {"key": key, "environment": R505_ENVIRONMENTS[key]}
+            for key in self.order["BLOCK-R505"]
+        ]
+
+    def test_load_template_order(self):
+        self.assertSetEqual(set(self.order), {"BLOCK-R505", "BLOCK-R506"})
+        self.assertEqual(len(self.order["BLOCK-R505"]), 22)
+        self.assertEqual(len(self.order["BLOCK-R506"]), 24)
+        for cases in self.order.values():
+            self.assertEqual(len(cases), len(set(cases)))
+
+    def test_placement_environments_exist(self):
+        for environment, _ in PLACEMENT_RULES.values():
+            self.assertIn(environment, self.env_index)
+
+    def test_saved_order_is_grouped_by_environment(self):
+        indices = [self.env_index[case["environment"]] for case in self.r505]
+        self.assertListEqual(indices, sorted(indices))
+
+    def test_order_template_cases(self):
+        live = list(reversed(self.r505))
+
+        cases, warnings = order_template_cases(
+            self.order["BLOCK-R505"], live, self.env_index
+        )
+
+        self.assertListEqual(keys(cases), self.order["BLOCK-R505"])
+        self.assertListEqual(warnings, [])
+
+    def test_order_template_cases_with_differences(self):
+        live = [case for case in self.r505 if case["key"] != "BLOCK-T51"]
+        live.insert(0, {"key": "BLOCK-T999", "environment": "2. Late Afternoon "})
+
+        cases, warnings = order_template_cases(
+            self.order["BLOCK-R505"], live, self.env_index
+        )
+
+        self.assertNotIn("BLOCK-T51", keys(cases))
+        # New case goes to the end of its group, before 3. Early Night.
+        i = keys(cases).index("BLOCK-T999")
+        self.assertEqual(keys(cases)[i - 1], "BLOCK-T658")
+        self.assertEqual(keys(cases)[i + 1], "BLOCK-T245")
+        self.assertEqual(len(warnings), 2)
+
+    def test_place_requested_cases(self):
+        requested = [
+            {"key": "BLOCK-T800", "kind": "calibration"},
+            {"key": "BLOCK-T700", "kind": "on_sky"},
+            {"key": "BLOCK-T600", "kind": "daytime"},
+            {"key": "BLOCK-T701", "kind": "on_sky"},
+            {"key": "BLOCK-T70", "kind": "daytime"},
+            {"key": "BLOCK-T700", "kind": "calibration"},
+            {"key": "BLOCK-T801", "kind": "calibration"},
+        ]
+
+        cases, skipped = place_requested_cases(self.r505, requested, self.env_index)
+        result = keys(cases)
+
+        # Daytime: end of 1. Daytime, after T70.
+        self.assertEqual(result[result.index("BLOCK-T70") + 1], "BLOCK-T600")
+        self.assertEqual(result[result.index("BLOCK-T600") + 1], "BLOCK-T239")
+        # On-sky: start of 6. Night, in page order, before T624.
+        i = result.index("BLOCK-T700")
+        self.assertListEqual(
+            result[i : i + 3], ["BLOCK-T700", "BLOCK-T701", "BLOCK-T624"]
+        )
+        self.assertEqual(result[i - 1], "BLOCK-T625")
+        # Calibration: end of the cycle, in page order.
+        self.assertListEqual(result[-2:], ["BLOCK-T800", "BLOCK-T801"])
+        self.assertEqual(cases[-1]["environment"], "8. Closed Dome")
+        # Template cases keep their order.
+        self.assertListEqual(
+            [key for key in result if key in R505_ENVIRONMENTS],
+            self.order["BLOCK-R505"],
+        )
+        self.assertListEqual(
+            skipped,
+            [
+                {"key": "BLOCK-T70", "reason": "already in the cycle"},
+                {"key": "BLOCK-T700", "reason": "already in the cycle"},
+            ],
+        )
+        self.assertEqual(len(self.r505), 22)  # input not modified
+
+    def test_place_on_sky_without_night_group(self):
+        template = [case for case in self.r505 if case["environment"] != "6. Night"]
+
+        cases, _ = place_requested_cases(
+            template, [{"key": "BLOCK-T700", "kind": "on_sky"}], self.env_index
+        )
+
+        result = keys(cases)
+        i = result.index("BLOCK-T700")
+        self.assertEqual(result[i - 1], "BLOCK-T625")
+        self.assertEqual(result[i + 1], "BLOCK-T196")
+
+    def test_place_unknown_kind(self):
+        with self.assertRaises(ValueError):
+            place_requested_cases(
+                self.r505, [{"key": "BLOCK-T1", "kind": "other"}], self.env_index
+            )
+
+
+if __name__ == "__main__":
+    unittest.main()

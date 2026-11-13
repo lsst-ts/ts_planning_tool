@@ -1,0 +1,58 @@
+{
+    "BLOCK-R505": {
+        "label": "Weekday template (Monday to Friday)",
+        "test_cases": [
+            "BLOCK-T17",
+            "BLOCK-T20",
+            "BLOCK-T19",
+            "BLOCK-T594",
+            "BLOCK-T529",
+            "BLOCK-T250",
+            "BLOCK-T145",
+            "BLOCK-T144",
+            "BLOCK-T51",
+            "BLOCK-T3",
+            "BLOCK-T4",
+            "BLOCK-T70",
+            "BLOCK-T239",
+            "BLOCK-T658",
+            "BLOCK-T245",
+            "BLOCK-T625",
+            "BLOCK-T624",
+            "BLOCK-T539",
+            "BLOCK-T196",
+            "BLOCK-T619",
+            "BLOCK-T242",
+            "BLOCK-T664"
+        ]
+    },
+    "BLOCK-R506": {
+        "label": "Weekend template (Saturday and Sunday)",
+        "test_cases": [
+            "BLOCK-T17",
+            "BLOCK-T18",
+            "BLOCK-T20",
+            "BLOCK-T19",
+            "BLOCK-T594",
+            "BLOCK-T244",
+            "BLOCK-T145",
+            "BLOCK-T144",
+            "BLOCK-T529",
+            "BLOCK-T3",
+            "BLOCK-T4",
+            "BLOCK-T70",
+            "BLOCK-T250",
+            "BLOCK-T51",
+            "BLOCK-T239",
+            "BLOCK-T658",
+            "BLOCK-T625",
+            "BLOCK-T245",
+            "BLOCK-T539",
+            "BLOCK-T624",
+            "BLOCK-T196",
+            "BLOCK-T619",
+            "BLOCK-T242",
+            "BLOCK-T664"
+        ]
+    }
+}

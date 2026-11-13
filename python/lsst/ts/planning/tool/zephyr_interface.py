@@ -35,6 +35,12 @@ from aiohttp import BasicAuth
 ZEPHYR_BASE_URL = "https://api.zephyrscale.smartbear.com/v2/"
 JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"
 
+# Headers sent with every request. Jira answers with Brotli-compressed bodies
+# when the client accepts them, and aiohttp >= 3.13 fails to decode them with
+# Brotli < 1.2 ("process() takes exactly 1 argument"), which some Rubin
+# environments still ship. Asking only for gzip/deflate avoids the problem.
+SESSION_HEADERS = {"Accept-Encoding": "gzip, deflate"}
+
 
 class ZephyrInterface:
     """
@@ -56,24 +62,25 @@ class ZephyrInterface:
             com.kanoah.test-manager/api-access-tokens
 
     Then, store the API tokens inside the JIRA_API_TOKEN and ZEPHYR_API_TOKEN
-    environment variables. You will also want to store your username in the
-    ZEPHYR_USERNAME and in the JIRA_USERNAME environment variables.
+    environment variables, and the email address of your Atlassian account
+    in the JIRA_USERNAME environment variable.
 
     Parameters
     ----------
-    api_token : str
-        The API token for authentication.
-    base_url : str
-        The base URL of the Jira instance.
+    jira_api_token : str
+        The Jira Cloud API token.
+    jira_base_url : str
+        The base URL of the Jira REST API.
+    jira_username : str
+        The email address of the Atlassian account that owns
+        `jira_api_token`, e.g. `jdoe@lsst.org`. A value without `@` is taken
+        as a bare Rubin username and `@lsst.org` is appended.
+    zephyr_api_token : str
+        The Zephyr Scale API access token.
+    zephyr_base_url : str
+        The base URL of the Zephyr Scale API.
     log : logging.Logger
         The logger object to use for logging.
-
-    Attributes
-    ----------
-    api_token : str
-        The API token for authentication.
-    base_url : str
-        The base URL of the Jira instance.
     """
 
     def __init__(
@@ -97,6 +104,18 @@ class ZephyrInterface:
             else log.getChild(type(self).__name__)
         )
 
+    @property
+    def jira_login(self):
+        """
+        The login for Jira Basic auth: the email address of the Atlassian
+        account. `jira_username` is used as is when it contains `@`;
+        otherwise it is taken as a bare Rubin username and `@lsst.org` is
+        appended, as older versions of this package required.
+        """
+        if self.jira_username is None or "@" in self.jira_username:
+            return self.jira_username
+        return f"{self.jira_username}@lsst.org"
+
     async def get(self, endpoint, params=None):
         """
         Generic method to make HTTP GET requests to the Zephyr Scale API and
@@ -108,11 +127,93 @@ class ZephyrInterface:
             "Content-Type": "application/json",
         }
 
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession(
+            raise_for_status=True, headers=SESSION_HEADERS
+        ) as session:
             async with session.get(url, headers=headers, params=params) as response:
                 payload = await response.json()
 
         return payload
+
+    async def get_all(self, endpoint, params=None, max_results=100):
+        """
+        Make as many HTTP GET requests as needed to retrieve every item of a
+        paginated Zephyr Scale endpoint.
+
+        Parameters
+        ----------
+        endpoint : str
+            The paginated endpoint, relative to the Zephyr Scale base URL.
+        params : dict, optional
+            Query parameters. Any `startAt` or `maxResults` in it is ignored.
+        max_results : int, optional
+            Requested page size. The server may use a smaller one; when this
+            happens, the following pages are requested with the page size
+            that the server returned.
+
+        Returns
+        -------
+        list
+            The items of all the pages, in the order the server returned them.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #section/Pagination
+        """
+        params = params or {}
+        start_at = 0
+        values = []
+
+        while True:
+            page_params = params | {"startAt": start_at, "maxResults": max_results}
+            page = await self.get(endpoint, page_params)
+            values.extend(page["values"])
+            self.log.debug(
+                f"Got {len(values)} of {page.get('total', '?')} items from {endpoint}"
+            )
+
+            # An empty page also stops the loop, in case `isLast` is missing
+            # or wrong, so we never request the same page forever.
+            if page.get("isLast", True) or not page["values"]:
+                break
+
+            # `startAt` must be a multiple of the page size in use.
+            max_results = page.get("maxResults") or max_results
+            start_at = page.get("startAt", start_at) + max_results
+
+        return values
+
+    async def post(self, endpoint, payload):
+        """
+        Generic method to make HTTP POST requests to the Zephyr Scale API and
+        return the response payload.
+
+        Parameters
+        ----------
+        endpoint : str
+            The endpoint, relative to the Zephyr Scale base URL.
+        payload : dict
+            The JSON body of the request.
+
+        Returns
+        -------
+        dict
+            The JSON body of the response.
+        """
+        url = self.zephyr_base_url + endpoint
+        headers = {
+            "Authorization": f"Bearer {self.zephyr_api_token}",
+            "Content-Type": "application/json",
+        }
+
+        async with aiohttp.ClientSession(
+            raise_for_status=True, headers=SESSION_HEADERS
+        ) as session:
+            async with session.post(url, headers=headers, json=payload) as response:
+                response_payload = await response.json()
+
+        return response_payload
 
     async def get_list_of_statuses(self, status_type=None, max_results=20):
         """
@@ -382,7 +483,9 @@ class ZephyrInterface:
         }
 
         # Perform the query
-        async with aiohttp.ClientSession(raise_for_status=True) as session:
+        async with aiohttp.ClientSession(
+            raise_for_status=True, headers=SESSION_HEADERS
+        ) as session:
             async with session.get(
                 url=url, headers=headers, params=query_parameters
             ) as response:
@@ -465,6 +568,12 @@ class ZephyrInterface:
         if parse == "full":
             # Get the test execution and test case steps, they should have the
             # same number of elements (steps).
+            # TODO: this reads the steps of the latest version of the test
+            # case, but the execution may have run an older version (its
+            # `testCase.self` ends in `/versions/<n>`). When the number of
+            # steps changed between versions the assert below fails, e.g.
+            # BLOCK-E306 / BLOCK-T21. Read the steps of the execution's
+            # version instead, if the API allows it.
             test_execution_steps = await self.get_steps_in_test_execution(
                 test_execution_key
             )
@@ -571,6 +680,102 @@ class ZephyrInterface:
 
         return response
 
+    async def list_test_cases_in_cycle(self, test_cycle_key):
+        """
+        Get the test cases in a test cycle.
+
+        The test cases come from the test executions of the cycle, so this
+        follows every page of results. A test case with more than one
+        execution in the cycle is listed once, at the position of its first
+        execution.
+
+        Parameters
+        ----------
+        test_cycle_key : str
+            The key of the test cycle, e.g. `BLOCK-R505`.
+
+        Returns
+        -------
+        list of dict
+            One dict per test case, in the order the API returned the test
+            executions, with:
+
+            - `key`: the test case key, e.g. `BLOCK-T18`.
+            - `version`: the test case version the execution uses (int).
+            - `environmentId`: the id of the execution's environment, or None.
+              `get_environments` gives the names.
+
+        Notes
+        -----
+        The API returns the test executions in the order they were created.
+        This is not the order shown in the Zephyr Scale UI when the cycle was
+        reordered by hand, and the API has no field with the UI order.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Executions/operation/listTestExecutions
+        """
+        if not re.fullmatch(r".+-R[0-9]+", test_cycle_key):
+            raise ValueError(f"Invalid test cycle key: {test_cycle_key}")
+
+        self.log.info(f"Querying test cases in test cycle {test_cycle_key}")
+        test_executions = await self.get_all(
+            "testexecutions", {"testCycle": test_cycle_key}
+        )
+
+        # The test case reference has no key, only a `self` URL like
+        # `.../testcases/BLOCK-T18/versions/1`. Reading the key from the URL
+        # saves one request per test execution.
+        test_cases = []
+        seen = set()
+        for test_execution in test_executions:
+            url = test_execution["testCase"]["self"]
+            match = re.search(r"/testcases/([^/]+-T[0-9]+)/versions/([0-9]+)", url)
+            if match is None:
+                raise ValueError(
+                    f"Cannot find the test case key of {test_execution['key']} "
+                    f"in {url}"
+                )
+            if match.group(1) in seen:
+                continue
+            seen.add(match.group(1))
+            environment = test_execution.get("environment")
+            test_cases.append(
+                {
+                    "key": match.group(1),
+                    "version": int(match.group(2)),
+                    "environmentId": environment["id"] if environment else None,
+                }
+            )
+
+        return test_cases
+
+    async def get_environments(self, project_key="BLOCK"):
+        """
+        Get the environments of a project.
+
+        In the Zephyr Scale UI, the test executions of a cycle are shown
+        grouped by environment, in the order of the environment `index`.
+
+        Parameters
+        ----------
+        project_key : str, optional
+            The key of the Jira project. The default is "BLOCK".
+
+        Returns
+        -------
+        list of dict
+            The environments, each with `id`, `name`, `description`, `index`
+            and `archived`.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Environments/operation/listEnvironments
+        """
+        return await self.get_all("environments", {"projectKey": project_key})
+
     async def get_user_name(self, user):
         """
         Get the user name based on a json_obj payload containing `self` and
@@ -607,8 +812,9 @@ class ZephyrInterface:
         query_parameters = {"accountId": json_obj["accountId"]}
 
         async with aiohttp.ClientSession(
-            auth=BasicAuth(f"{self.jira_username}@lsst.org", self.jira_api_token),
+            auth=BasicAuth(self.jira_login, self.jira_api_token),
             raise_for_status=True,
+            headers=SESSION_HEADERS,
         ) as session:
             async with session.get(url, params=query_parameters) as response:
                 user_details = await response.json()

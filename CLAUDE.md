@@ -20,6 +20,8 @@ python/lsst/ts/planning/tool/
   zephyr_interface.py   # ZephyrInterface: all HTTP logic (aiohttp)
   cli.py                # zapi CLI (argparse); entry point run_zapi_command_line
   utils.py              # load_json_data(filename, path) -> reads <path>/data/<filename>
+  cycle_order.py        # pure functions: order template cases, place requested cases
+  data/cycle_templates.json  # UI order of the template cycles (API can't give it)
   __init__.py           # star-imports the modules above (and version.py, generated)
 tests/
   test_zephyr_interface.py         # mocked, runs in CI
@@ -37,7 +39,7 @@ Every new module must define `__all__` and be star-imported in `__init__.py`.
 - **All network methods are `async`.** Each request opens its own `aiohttp.ClientSession(raise_for_status=True)`; HTTP errors raise `aiohttp.ClientResponseError`.
 - `get(endpoint, params)` is the generic Zephyr GET (Bearer token). New read endpoints should go through it.
   Exception: `get_test_cycles` builds its own session (legacy duplication).
-- `get_user_name(user)` uses Jira Basic auth as **`f"{jira_username}@lsst.org"`**, so `JIRA_USERNAME` must be the bare username. Accepts an `accountId` string (test executions) or a `{"accountId", "self"}` dict (test cases and cycles).
+- `get_user_name(user)` uses Jira Basic auth with the `jira_login` property: `JIRA_USERNAME` is the full email of the Atlassian account (it is not always `@lsst.org`); a value without `@` gets `@lsst.org` appended for older setups. Accepts an `accountId` string (test executions) or a `{"accountId", "self"}` dict (test cases and cycles).
 - `parse(json_obj, parse)` follows a reference's `self` URL and returns the resolved object (`simple`) or the reference merged with it (`full`).
 - **Parse modes** on `get_test_case`, `get_test_cycle`, `get_test_execution`, `list_test_executions`:
   - `raw`: payload untouched (no extra requests).
@@ -51,12 +53,12 @@ Every new module must define `__all__` and be star-imported in `__init__.py`.
 ## Not implemented yet / known issues
 
 - **Test Plans**: no methods; `get_test_cycle` has a `TODO` for parsing linked test plans.
+- `get_test_execution(parse="full")` merges the execution's steps with the steps of the **latest** test case version, not the version the execution ran; when the step count changed, its `assert` fails (e.g. `BLOCK-E306`). `test_get_test_execution_full_parse` is marked `xfail` until this is fixed (TODO in the code).
 - **No write operations** (no POST/PUT): creating test executions or updating step/execution status is not implemented, even though the class docstring says otherwise.
 - **No pagination** beyond a single page (`maxResults`) in `list_test_executions` / `get_test_cycles`.
 - `get_test_case(parse="simple")` passes `parse` through to `self.parse()`, so its fields end up as whole resolved objects instead of scalars. This differs from cycle and execution.
 - CLI: `zapi list test_executions -m/--max` is ignored. argparse stores it as `max`, but the handler expects `max_results`, so it always uses 5.
 - CLI: `setup_logging()` adds a new handler on every call; there is a TODO about log levels not changing as expected.
-- Docstring of `ZephyrInterface` mentions a `ZEPHYR_USERNAME` env var that nothing uses.
 - `parse` and `get_user_name` requests run sequentially in `simple`/`full` mode (except `get_test_case`, which uses `asyncio.gather`), so large lists are slow.
 
 ## Testing

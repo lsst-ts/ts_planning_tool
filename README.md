@@ -35,7 +35,7 @@ The CLI and the integration tests read them from these environment variables:
 |--------------------|-----------------------------------------------------------------------------|
 | `ZEPHYR_API_TOKEN` | Zephyr Scale API access token (see below).                                  |
 | `JIRA_API_TOKEN`   | Jira Cloud API token, created at <https://id.atlassian.com/manage-profile/security/api-tokens>. |
-| `JIRA_USERNAME`    | Your Jira username **without** the `@lsst.org` domain (e.g. `jdoe`). The domain is appended automatically. |
+| `JIRA_USERNAME`    | The email address of the Atlassian account that owns the Jira token (e.g. `jdoe@lsst.org`). A value without `@` is treated as a bare Rubin username and `@lsst.org` is appended. |
 
 When using the Python class directly, pass these values to the `ZephyrInterface` constructor.
 By default, the Jira and Zephyr Scale URLs are the ones used by Rubin Observatory; you can override them with the `jira_base_url` and `zephyr_base_url` arguments.
@@ -65,7 +65,7 @@ file called `~/.zapi`:
 # ts_planning_tool / Zephyr Scale API credentials
 export ZEPHYR_API_TOKEN="paste-your-zephyr-token-here"
 export JIRA_API_TOKEN="paste-your-jira-token-here"
-export JIRA_USERNAME="jdoe"  # without @lsst.org
+export JIRA_USERNAME="jdoe@lsst.org"  # email of your Atlassian account
 ```
 
 Restrict its permissions so only you can read it, since it holds secrets:
