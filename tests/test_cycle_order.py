@@ -64,7 +64,7 @@ class TestCycleOrder(unittest.TestCase):
             self.assertEqual(len(cases), len(set(cases)))
 
     def test_placement_environments_exist(self):
-        for environment, _ in PLACEMENT_RULES.values():
+        for environment, _, _ in PLACEMENT_RULES.values():
             self.assertIn(environment, self.env_index)
 
     def test_saved_order_is_grouped_by_environment(self):
@@ -110,15 +110,16 @@ class TestCycleOrder(unittest.TestCase):
         cases, skipped = place_requested_cases(self.r505, requested, self.env_index)
         result = keys(cases)
 
-        # Daytime: end of 1. Daytime, after T70.
-        self.assertEqual(result[result.index("BLOCK-T70") + 1], "BLOCK-T600")
+        # Daytime: end of 1. Daytime, after T51 (DIMM, last of the day).
+        self.assertEqual(result[result.index("BLOCK-T51") + 1], "BLOCK-T600")
         self.assertEqual(result[result.index("BLOCK-T600") + 1], "BLOCK-T239")
-        # On-sky: start of 6. Night, in page order, before T624.
+        # On-sky: after the alignment (T539), right before the survey (T624),
+        # in page order.
         i = result.index("BLOCK-T700")
         self.assertListEqual(
-            result[i : i + 3], ["BLOCK-T700", "BLOCK-T701", "BLOCK-T624"]
+            result[i - 1 : i + 3],
+            ["BLOCK-T539", "BLOCK-T700", "BLOCK-T701", "BLOCK-T624"],
         )
-        self.assertEqual(result[i - 1], "BLOCK-T625")
         # Calibration: end of the cycle, in page order.
         self.assertListEqual(result[-2:], ["BLOCK-T800", "BLOCK-T801"])
         self.assertEqual(cases[-1]["environment"], "8. Closed Dome")
@@ -135,6 +136,19 @@ class TestCycleOrder(unittest.TestCase):
             ],
         )
         self.assertEqual(len(self.r505), 22)  # input not modified
+
+    def test_place_on_sky_without_survey(self):
+        # No T624 (anchor): on-sky goes to the end of 6. Night.
+        template = [case for case in self.r505 if case["key"] != "BLOCK-T624"]
+
+        cases, _ = place_requested_cases(
+            template, [{"key": "BLOCK-T700", "kind": "on_sky"}], self.env_index
+        )
+
+        result = keys(cases)
+        i = result.index("BLOCK-T700")
+        self.assertEqual(result[i - 1], "BLOCK-T539")
+        self.assertEqual(result[i + 1], "BLOCK-T196")
 
     def test_place_on_sky_without_night_group(self):
         template = [case for case in self.r505 if case["environment"] != "6. Night"]

@@ -39,12 +39,15 @@ import os
 from .utils import load_json_data
 
 # Where each kind of requested test case goes in a nightly test cycle:
-# (environment, "start" or "end" of that environment's group).
+# (environment, "start" or "end" of that environment's group, anchor).
+# When the anchor test case is in the cycle, the requested test cases go
+# right before it instead: on-sky tests run after the initial alignment
+# (BLOCK-T539) and before the survey (BLOCK-T624).
 # Closed-dome night tests count as calibrations.
 PLACEMENT_RULES = {
-    "daytime": ("1. Daytime", "end"),
-    "on_sky": ("6. Night", "start"),
-    "calibration": ("8. Closed Dome", "end"),
+    "daytime": ("1. Daytime", "end", None),
+    "on_sky": ("6. Night", "end", "BLOCK-T624"),
+    "calibration": ("8. Closed Dome", "end", None),
 }
 
 
@@ -191,7 +194,10 @@ def place_requested_cases(cases, requested, env_index, rules=PLACEMENT_RULES):
     env_index : dict
         Environment name (stripped) -> environment index.
     rules : dict, optional
-        Kind -> (environment, "start" or "end").
+        Kind -> (environment, "start" or "end", anchor test case key or
+        None). If the anchor is in the cycle, the test cases of that kind go
+        right before it; otherwise at the start or end of the environment's
+        group.
 
     Returns
     -------
@@ -220,8 +226,12 @@ def place_requested_cases(cases, requested, env_index, rules=PLACEMENT_RULES):
         blocks.setdefault(kind, []).append({"key": key, "environment": rules[kind][0]})
 
     for kind, block in blocks.items():
-        environment, position = rules[kind]
-        i = _insertion_index(result, environment, position, env_index)
+        environment, position, anchor = rules[kind]
+        keys = [case["key"] for case in result]
+        if anchor in keys:
+            i = keys.index(anchor)
+        else:
+            i = _insertion_index(result, environment, position, env_index)
         result[i:i] = block
 
     return result, skipped

@@ -66,11 +66,11 @@ The tool only adds test cases; the night crew removes the ones that were done or
 - `template`: `BLOCK-R505` Monday–Friday, `BLOCK-R506` Saturday–Sunday.
 - `kind` (where the case goes in the cycle):
   - `daytime`: end of `1. Daytime`
-  - `on_sky`: start of `6. Night`
+  - `on_sky`: `6. Night`, after the initial alignment and right before the survey (`BLOCK-T624`)
   - `calibration`: end of the cycle, `8. Closed Dome`
 - `exclude` (optional, per night): template test cases to leave out of that night, e.g. `["BLOCK-T625", "BLOCK-T539"]`. Only with the person's agreement (see the reading rules).
 - `version`: only when the page names one (`BLOCK-T624 (2.0)`, `BLOCK-T732v3` → `"3.0"`). The API always uses the latest version; the tool only warns.
-- Within each kind, keep the **page order** (it is the priority order).
+- Within each kind, keep the **page order** (it is the priority order), with one exception: among `on_sky` test cases, put alignment or "prepare for on-sky" test cases (e.g. `BLOCK-T769`) **first**, since the others need the telescope aligned (W47: the page listed T724, T769, T770; the support scientist wanted T769, T724, T770).
 
 ## Reading rules
 
@@ -98,7 +98,7 @@ Which nights and which kind, by section (pages differ by author; match by meanin
 A short table per kind with the night(s), then the skipped items:
 
 ```
-on_sky (Mon–Fri, start of 6. Night): BLOCK-T724, BLOCK-T769, BLOCK-T770
+on_sky (Mon–Fri, before T624):       BLOCK-T769, BLOCK-T724, BLOCK-T770
 calibration (all nights, end):       BLOCK-T563, BLOCK-T523, …
 daytime (Sat–Sun, end of 1. Daytime): BLOCK-T751, BLOCK-T754
 Skipped: SVAB-20 (Jira ticket), Giant Donut Dither (NEED TEST CASE), …
