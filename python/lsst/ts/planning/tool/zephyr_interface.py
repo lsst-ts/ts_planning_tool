@@ -20,13 +20,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 __all__ = [
+    "AddTestCasesError",
     "ZephyrInterface",
+    "format_zephyr_date",
 ]
 
 import asyncio
 import logging
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 
 import aiohttp
 from aiohttp import BasicAuth
@@ -40,6 +42,52 @@ JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"
 # Brotli < 1.2 ("process() takes exactly 1 argument"), which some Rubin
 # environments still ship. Asking only for gzip/deflate avoids the problem.
 SESSION_HEADERS = {"Accept-Encoding": "gzip, deflate"}
+
+
+def format_zephyr_date(value):
+    """
+    Format a date the way the Zephyr Scale API expects it.
+
+    Parameters
+    ----------
+    value : datetime, str or None
+        A `datetime` is converted to UTC (a naive one is taken as UTC).
+        A string or None is returned unchanged.
+
+    Returns
+    -------
+    str or None
+        e.g. `2026-11-16T03:00:00Z`.
+    """
+    if not isinstance(value, datetime):
+        return value
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+class AddTestCasesError(RuntimeError):
+    """
+    Raised when a test execution cannot be added to a test cycle.
+
+    Attributes
+    ----------
+    test_cycle_key : str
+        The test cycle.
+    failed_key : str
+        The test case that could not be added.
+    added : list of dict
+        The executions created before the error, which are not undone.
+    """
+
+    def __init__(self, test_cycle_key, failed_key, added):
+        self.test_cycle_key = test_cycle_key
+        self.failed_key = failed_key
+        self.added = added
+        super().__init__(
+            f"Could not add {failed_key} to {test_cycle_key} after adding "
+            f"{len(added)} test case(s): {[item['key'] for item in added]}"
+        )
 
 
 class ZephyrInterface:
@@ -184,10 +232,14 @@ class ZephyrInterface:
 
         return values
 
-    async def post(self, endpoint, payload):
+    async def post(self, endpoint, payload, max_retries=3):
         """
         Generic method to make HTTP POST requests to the Zephyr Scale API and
         return the response payload.
+
+        The API does not document its rate limits, so a `429 Too Many
+        Requests` answer is retried after the `Retry-After` delay (or 1, 2,
+        4... seconds) up to `max_retries` times.
 
         Parameters
         ----------
@@ -195,11 +247,19 @@ class ZephyrInterface:
             The endpoint, relative to the Zephyr Scale base URL.
         payload : dict
             The JSON body of the request.
+        max_retries : int, optional
+            How many times to retry after a `429` answer.
 
         Returns
         -------
         dict
             The JSON body of the response.
+
+        Raises
+        ------
+        aiohttp.ClientResponseError
+            If the API answers with an error. Its message includes the body
+            of the answer, where Zephyr Scale explains what was wrong.
         """
         url = self.zephyr_base_url + endpoint
         headers = {
@@ -207,13 +267,31 @@ class ZephyrInterface:
             "Content-Type": "application/json",
         }
 
-        async with aiohttp.ClientSession(
-            raise_for_status=True, headers=SESSION_HEADERS
-        ) as session:
-            async with session.post(url, headers=headers, json=payload) as response:
-                response_payload = await response.json()
+        for attempt in range(max_retries + 1):
+            async with aiohttp.ClientSession(headers=SESSION_HEADERS) as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    if response.status == 429 and attempt < max_retries:
+                        try:
+                            delay = float(response.headers.get("Retry-After", ""))
+                        except ValueError:
+                            delay = 2**attempt
+                        self.log.warning(
+                            f"Rate limited on POST {endpoint}; retrying in {delay} s"
+                        )
+                        await asyncio.sleep(delay)
+                        continue
 
-        return response_payload
+                    if response.status >= 400:
+                        body = await response.text()
+                        raise aiohttp.ClientResponseError(
+                            response.request_info,
+                            response.history,
+                            status=response.status,
+                            message=f"{response.reason}: {body}",
+                            headers=response.headers,
+                        )
+
+                    return await response.json()
 
     async def get_list_of_statuses(self, status_type=None, max_results=20):
         """
@@ -775,6 +853,277 @@ class ZephyrInterface:
                 #tag/Environments/operation/listEnvironments
         """
         return await self.get_all("environments", {"projectKey": project_key})
+
+    async def get_folders(self, project_key="BLOCK", folder_type="TEST_CYCLE"):
+        """
+        Get the folders of a project.
+
+        Parameters
+        ----------
+        project_key : str, optional
+            The key of the Jira project. The default is "BLOCK".
+        folder_type : str, optional
+            `TEST_CYCLE` (default), `TEST_CASE` or `TEST_PLAN`.
+
+        Returns
+        -------
+        list of dict
+            The folders, each with `id`, `parentId` (None for root folders),
+            `name`, `index`, `folderType` and `project`.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Folders/operation/listFolders
+        """
+        params = {"projectKey": project_key, "folderType": folder_type}
+        return await self.get_all("folders", params)
+
+    async def get_or_create_folder(
+        self, path, project_key="BLOCK", folder_type="TEST_CYCLE", dry_run=False
+    ):
+        """
+        Find a folder by its path and create it if it does not exist.
+
+        Only the last folder of the path is created. Its parents must exist,
+        so that a typo in the path cannot create a new folder tree.
+
+        Parameters
+        ----------
+        path : str
+            The folder path, e.g. `/LSST Survey Plans/2026/week47`.
+        project_key : str, optional
+            The key of the Jira project. The default is "BLOCK".
+        folder_type : str, optional
+            `TEST_CYCLE` (default), `TEST_CASE` or `TEST_PLAN`.
+        dry_run : bool, optional
+            If True, never create the folder.
+
+        Returns
+        -------
+        folder_id : int or None
+            The id of the folder, or None if it does not exist and `dry_run`
+            is True.
+        status : str
+            `found`, `created`, or `missing` (`dry_run` only).
+
+        Raises
+        ------
+        ValueError
+            If the path is empty, a parent folder does not exist, or more than
+            one folder matches.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Folders/operation/createFolder
+        """
+        names = [name for name in path.split("/") if name.strip()]
+        if not names:
+            raise ValueError(f"Invalid folder path: {path!r}")
+
+        folders = await self.get_folders(project_key, folder_type)
+
+        parent_id = None
+        for depth, name in enumerate(names):
+            matches = [
+                folder
+                for folder in folders
+                if folder["name"] == name and folder["parentId"] == parent_id
+            ]
+            if len(matches) > 1:
+                raise ValueError(f"More than one folder matches {path!r} at {name!r}")
+            if matches:
+                parent_id = matches[0]["id"]
+                continue
+
+            if depth < len(names) - 1:
+                missing = "/" + "/".join(names[: depth + 1])
+                raise ValueError(
+                    f"Parent folder {missing!r} does not exist; create it in the "
+                    f"Zephyr Scale UI first."
+                )
+            if dry_run:
+                self.log.info(f"Folder {path!r} does not exist (dry run)")
+                return None, "missing"
+
+            payload = {
+                "parentId": parent_id,
+                "name": name,
+                "projectKey": project_key,
+                "folderType": folder_type,
+            }
+            response = await self.post("folders", payload)
+            self.log.info(f"Created folder {path!r} with id {response['id']}")
+            return response["id"], "created"
+
+        return parent_id, "found"
+
+    async def create_test_cycle(
+        self,
+        name,
+        project_key="BLOCK",
+        description=None,
+        planned_start_date=None,
+        planned_end_date=None,
+        folder_id=None,
+        status_name=None,
+        owner_id=None,
+    ):
+        """
+        Create a test cycle.
+
+        Parameters
+        ----------
+        name : str
+            The name of the test cycle.
+        project_key : str, optional
+            The key of the Jira project. The default is "BLOCK".
+        description : str, optional
+            The description; HTML is allowed.
+        planned_start_date, planned_end_date : datetime or str, optional
+            Planned dates. A `datetime` is converted to UTC (a naive one is
+            taken as UTC); a string is sent as is, and must look like
+            `2026-11-16T03:00:00Z`.
+        folder_id : int, optional
+            The id of a `TEST_CYCLE` folder.
+        status_name : str, optional
+            The name of the test cycle status, e.g. `Not Executed`.
+        owner_id : str, optional
+            The Atlassian account id of the owner.
+
+        Returns
+        -------
+        dict
+            The new test cycle's `id`, `self` and `key`.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Cycles/operation/createTestCycle
+        """
+        optional = {
+            "description": description,
+            "plannedStartDate": format_zephyr_date(planned_start_date),
+            "plannedEndDate": format_zephyr_date(planned_end_date),
+            "folderId": folder_id,
+            "statusName": status_name,
+            "ownerId": owner_id,
+        }
+        payload = {"projectKey": project_key, "name": name} | {
+            key: value for key, value in optional.items() if value is not None
+        }
+
+        response = await self.post("testcycles", payload)
+        self.log.info(f"Created test cycle {response.get('key')}: {name!r}")
+        return response
+
+    async def add_test_cases_to_cycle(
+        self, test_cycle_key, test_cases, status_name="Not Executed"
+    ):
+        """
+        Add test cases to a test cycle, one test execution per test case.
+
+        The executions are created one at a time, in the order given, so the
+        order of `test_cases` is the order they are created in.
+
+        Parameters
+        ----------
+        test_cycle_key : str
+            The key of the test cycle, e.g. `BLOCK-R760`.
+        test_cases : list of str or dict
+            Test case keys, or dicts with `key` and, optionally,
+            `environment` (an environment name such as `1. Daytime`).
+        status_name : str, optional
+            The status of the new executions. The default is `Not Executed`.
+
+        Returns
+        -------
+        list of dict
+            One dict per created execution, with the test case `key`, the
+            `environment` and the new execution `id`.
+
+        Raises
+        ------
+        AddTestCasesError
+            If an execution cannot be created. Its `added` attribute lists
+            the executions created before the error; they are not undone,
+            because the API cannot delete test executions.
+
+        Notes
+        -----
+        The API has no field to choose the test case version, so the
+        executions use the version the API picks, and it documents that
+        test cases with "call to test", parameters or test data are not
+        supported.
+
+        See also
+        --------
+        * https://support.smartbear.com/zephyr-scale-cloud/api-docs/\
+                #tag/Test-Executions/operation/createTestExecution
+        """
+        match = re.fullmatch(r"([A-Z][A-Z_0-9]+)-R[0-9]+", test_cycle_key)
+        if match is None:
+            raise ValueError(f"Invalid test cycle key: {test_cycle_key}")
+        project_key = match.group(1)
+
+        added = []
+        for test_case in test_cases:
+            if isinstance(test_case, str):
+                test_case = {"key": test_case}
+            payload = {
+                "projectKey": project_key,
+                "testCycleKey": test_cycle_key,
+                "testCaseKey": test_case["key"],
+                "statusName": status_name,
+                # The API marks executions as automated unless told not to.
+                "automated": False,
+            }
+            if test_case.get("environment"):
+                payload["environmentName"] = test_case["environment"]
+
+            try:
+                response = await self.post("testexecutions", payload)
+            except aiohttp.ClientResponseError as error:
+                raise AddTestCasesError(
+                    test_cycle_key, test_case["key"], added
+                ) from error
+
+            added.append(
+                {
+                    "key": test_case["key"],
+                    "environment": test_case.get("environment"),
+                    "id": response["id"],
+                }
+            )
+            self.log.info(f"Added {test_case['key']} to {test_cycle_key}")
+
+        return added
+
+    async def get_myself(self):
+        """
+        Get the Jira account of the credentials in use.
+
+        Returns
+        -------
+        dict
+            The Jira user, including `accountId` and `displayName`.
+
+        See also
+        --------
+        * https://developer.atlassian.com/cloud/jira/platform/rest/v2/\
+                api-group-myself/#api-rest-api-2-myself-get
+        """
+        if self.jira_api_token is None:
+            raise ValueError("JIRA API token is not set")
+
+        async with aiohttp.ClientSession(
+            auth=BasicAuth(self.jira_login, self.jira_api_token),
+            raise_for_status=True,
+            headers=SESSION_HEADERS,
+        ) as session:
+            async with session.get(self.jira_base_url + "myself") as response:
+                return await response.json()
 
     async def get_user_name(self, user):
         """
