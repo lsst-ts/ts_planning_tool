@@ -103,4 +103,4 @@ As of 2026-11-13:
   After each merges, retarget the next PR's base to `develop`.
 - PR **#7** (`main` → `develop`, version history) and PR **#11** (`update_readme`, token setup docs, now folded into README here) are open.
 - Untracked files in the repo root (`BLOCK-*.json` payload dumps, a PDF, `build/`, `python/.../schemas/`, `PLAN_RSO-1214.md`, `HANDOFF_*.md`) are local scratch; don't commit them unless asked.
-- `tickets/RSO-1214` (not pushed) adds the weekly test-cycle drafting (`zapi draft week`). The plan, decisions and API findings are in `PLAN_RSO-1214.md`. Throwaway write tests go in `/LSST Survey Plans/2026/sandbox` (`BLOCK-R755`, cancelled).
+- PR **#12** (`tickets/RSO-1214` → `tickets/DM-44804-cli`, stack 4/4) adds the weekly test-cycle drafting (`zapi draft week` + skill). Retarget it to `develop` after #10 merges. Local notes in `PLAN_RSO-1214.md`. Throwaway write tests go in `/LSST Survey Plans/2026/sandbox` (`BLOCK-R755`, cancelled).
