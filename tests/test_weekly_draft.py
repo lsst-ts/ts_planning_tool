@@ -284,6 +284,37 @@ class TestWeeklyDraft(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(zapi.create_test_cycle.call_count, 2)
         self.assertIn("ONLY 3 ADDED", format_report(context.exception.report))
 
+    async def test_exclude(self):
+        zapi = make_zapi()
+        plan = copy.deepcopy(PLAN)
+        plan["days"][5]["exclude"] = ["BLOCK-T625", "BLOCK-T539", "BLOCK-T999"]
+
+        report = await draft_week(zapi, plan)
+
+        saturday = report["days"][5]
+        self.assertNotIn("BLOCK-T625", keys(saturday))
+        self.assertNotIn("BLOCK-T539", keys(saturday))
+        self.assertListEqual(saturday["excluded"], ["BLOCK-T625", "BLOCK-T539"])
+        self.assertEqual(len(saturday["test_cases"]), 24 - 2 + 3)
+        # Other nights keep them.
+        self.assertIn("BLOCK-T625", keys(report["days"][6]))
+        self.assertListEqual(report["days"][6]["excluded"], [])
+        # On-sky still goes before the first 6. Night case left (T624).
+        result = keys(saturday)
+        self.assertEqual(result[result.index("BLOCK-T900") + 1], "BLOCK-T624")
+        self.assertTrue(any("BLOCK-T999" in w for w in report["warnings"]))
+        self.assertIn("excluded from the template", format_report(report))
+
+    def test_validate_plan_exclude(self):
+        plan = copy.deepcopy(PLAN)
+        plan["days"][0]["exclude"] = ["BLOCK-T900", "T625"]
+        plan["days"][1]["exclude"] = "BLOCK-T625"
+
+        problems = validate_plan(plan, self.templates)
+
+        self.assertEqual(len(problems), 3)
+        self.assertTrue(any("both requested and excluded" in p for p in problems))
+
     async def test_weekday_template_warning(self):
         zapi = make_zapi()
         plan = copy.deepcopy(PLAN)

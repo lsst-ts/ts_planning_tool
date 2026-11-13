@@ -203,10 +203,11 @@ The project skill in [`.claude/skills/draft-weekly-test-cycles`](.claude/skills/
 
   Closed-dome night tests are `calibration`.
   `version` is optional; the API always uses the latest version, so a different one is only reported as a warning.
+- `exclude` (optional, per night): template test cases to leave out of that night's cycle, e.g. `["BLOCK-T625", "BLOCK-T539"]` when a requested test case replaces them.
 - Optional: `owner_account_id` (by default the owner is you, from your Jira credentials) and `notes_title` (by default `2026 W47 Test Cycle Publication Notes`).
 
 Each cycle is named `<date> LSST Survey Plan`, planned from `<date>T03:00:00Z` to the next day, owned by you, with a link to `notes_url` as its description.
-It gets the template's test cases followed by the requested ones, placed as above; requested test cases already in the template are skipped.
+It gets the template's test cases (minus `exclude`) and the requested ones, placed as above; requested test cases already in the template are skipped.
 The Zephyr Scale UI lists the test cases in the order they are created, so this is the order the night crew sees.
 
 ```

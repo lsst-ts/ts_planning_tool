@@ -68,6 +68,7 @@ The tool only adds test cases; the night crew removes the ones that were done or
   - `daytime`: end of `1. Daytime`
   - `on_sky`: start of `6. Night`
   - `calibration`: end of the cycle, `8. Closed Dome`
+- `exclude` (optional, per night): template test cases to leave out of that night, e.g. `["BLOCK-T625", "BLOCK-T539"]`. Only with the person's agreement (see the reading rules).
 - `version`: only when the page names one (`BLOCK-T624 (2.0)`, `BLOCK-T732v3` → `"3.0"`). The API always uses the latest version; the tool only warns.
 - Within each kind, keep the **page order** (it is the priority order).
 
@@ -83,6 +84,7 @@ Which items become test cases:
   - sub-items without a key under a test case (e.g. "z-band", "Prioritize Long No Filter scan" under `BLOCK-T523`): they describe how to run the parent.
 - Include test cases whatever their status (`DRAFT`, `PLANNED`, `READY`); the crew runs them when ready.
 - A test case that is already in the template (e.g. `BLOCK-T624`, `BLOCK-T625`, `BLOCK-T539`) is skipped by the tool; you may leave it in the plan.
+- When the page says a test case **replaces** template test cases (W47: `BLOCK-T769` "will replace BLOCK-T625 and BLOCK-T539"), ask whether to leave them out and on which nights; if yes, list them in that night's `exclude`. Never exclude template test cases on your own.
 
 Which nights and which kind, by section (pages differ by author; match by meaning, not exact titles):
 - **Closed-dome / calibration menu** ("Closed-Dome Night Tests", "Closed-dome test menu for the week"): `calibration`, **all seven nights**.

@@ -30,12 +30,14 @@ A plan looks like::
         {"date": "2026-11-16", "template": "BLOCK-R505",
          "test_cases": [{"key": "BLOCK-T724", "kind": "on_sky"},
                         {"key": "BLOCK-T624", "kind": "on_sky",
-                         "version": "2.0"}]}
+                         "version": "2.0"}],
+         "exclude": ["BLOCK-T625", "BLOCK-T539"]}
       ]
     }
 
 Each nightly cycle gets the template's test cases, in the saved UI order,
-plus the requested ones, placed by `kind` (see `PLACEMENT_RULES`).
+minus the ones in `exclude` (optional), plus the requested ones, placed by
+`kind` (see `PLACEMENT_RULES`).
 """
 
 __all__ = [
@@ -150,6 +152,17 @@ def validate_plan(plan, templates):
                         f"{where}.test_cases[{j}]: bad version {item['version']!r}"
                     )
 
+        exclude = day.get("exclude", [])
+        if not isinstance(exclude, list):
+            problems.append(f"{where}: `exclude` must be a list of test case keys")
+            continue
+        requested = {item.get("key") for item in day.get("test_cases", [])}
+        for key in exclude:
+            if not re.fullmatch(rf"{project}-T[0-9]+", str(key)):
+                problems.append(f"{where}.exclude: bad key {key!r}")
+            elif key in requested:
+                problems.append(f"{where}: {key} is both requested and excluded")
+
     return problems
 
 
@@ -190,8 +203,8 @@ async def draft_week(zapi, plan, dry_run=True, templates=None):
         The report: `dry_run`, `folder`, `owner`, `description`, `warnings`
         and `days`, one per plan day with its `name`, `template`, planned
         dates, ordered `test_cases` (each with `key`, `environment` and
-        `source`, the kind or "template"), `skipped` and, when written,
-        `cycle_key` and `added`.
+        `source`, the kind or "template"), `skipped`, `excluded` (template
+        test cases left out) and, when written, `cycle_key` and `added`.
 
     Raises
     ------
@@ -309,7 +322,20 @@ async def draft_week(zapi, plan, dry_run=True, templates=None):
                 f"template for {', '.join(allowed)}."
             )
 
-        template_cases = ordered_templates[day["template"]]
+        all_template_keys = {case["key"] for case in ordered_templates[day["template"]]}
+        exclude = day.get("exclude", [])
+        excluded = [key for key in exclude if key in all_template_keys]
+        for key in exclude:
+            if key not in all_template_keys:
+                report["warnings"].append(
+                    f"{day['date']}: {key} is not in {day['template']}; "
+                    f"nothing to exclude."
+                )
+        template_cases = [
+            case
+            for case in ordered_templates[day["template"]]
+            if case["key"] not in excluded
+        ]
         template_keys = {case["key"] for case in template_cases}
         kinds = {item["key"]: item["kind"] for item in day.get("test_cases", [])}
         cases, skipped = place_requested_cases(
@@ -336,6 +362,7 @@ async def draft_week(zapi, plan, dry_run=True, templates=None):
                     for case in cases
                 ],
                 "skipped": skipped,
+                "excluded": excluded,
                 "cycle_key": None,
             }
         )
@@ -432,6 +459,8 @@ def format_report(report):
             )
         for item in day["skipped"]:
             lines.append(f"  skipped {item['key']}: {item['reason']}")
+        if day.get("excluded"):
+            lines.append(f"  excluded from the template: {', '.join(day['excluded'])}")
 
     if report["warnings"]:
         lines += ["", "Warnings:"]
