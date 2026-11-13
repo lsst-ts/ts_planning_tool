@@ -72,6 +72,18 @@ Every new module must define `__all__` and be star-imported in `__init__.py`.
 - CLI: `setup_logging()` adds a new handler on every call; there is a TODO about log levels not changing as expected.
 - `parse` and `get_user_name` requests run sequentially in `simple`/`full` mode (except `get_test_case`, which uses `asyncio.gather`), so large lists are slow.
 
+## TODO: post-merge code review (DM-44804 + RSO-1214)
+
+PR #12 merged a large amount of code into `develop` without a detailed review: the DM-44804 work (planned as the separate PRs #8–#10, closed unreviewed) and RSO-1214 on top of it.
+That was accepted to unblock the weekly drafting, but **the code still needs a proper review**. When there is time, review it as if it were a new PR and turn the findings into tickets. Suggested order:
+
+1. **DM-44804** (commits `07e844f`, `ec534d0`, `864b160`): `utils.load_json_data`; steps and `parse="full"` in `ZephyrInterface` (`get_steps_in_test_case`, `get_steps_from_call_to_test`, `get_test_execution`); the `zapi get steps` CLI. Known problems already listed above: the full-parse step mismatch (`xfail`), steps read from one page only, `get_test_case(parse="simple")`, the ignored `--max` flag, sequential parsing.
+2. **RSO-1214 write path** (`post`/`put`/`_write`, `create_test_cycle`, `add_test_cases_to_cycle`, `set_test_cycle_status`, `get_or_create_folder`): error handling, retries, and that nothing writes in a dry run.
+3. **Drafting** (`cycle_order.py`, `weekly_draft.py`, CLI `draft week` / `add test_cases`) and the skill (`.claude/skills/draft-weekly-test-cycles/`, including the Confluence write in `link_cycles.py`).
+4. General: consistency between old and new methods (e.g. `get_test_cycles` vs `get_all`), docstrings, test coverage, black/flake8 with the repository's pre-commit config.
+
+Remove this section once the review is done.
+
 ## Testing
 
 - Mocked tests patch `aiohttp.ClientSession.get` and feed it JSON from `tests/data/`:
