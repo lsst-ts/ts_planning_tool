@@ -43,7 +43,7 @@ Every new module must define `__all__` and be star-imported in `__init__.py`.
 - `get_all(endpoint, params)` follows `startAt`/`maxResults` until `isLast` and returns the items as one list. Use it for every list endpoint in new code (the server caps a page at 1000).
 - `post(endpoint, payload)` is the generic write. It retries `429` (rate limits are undocumented) and puts Zephyr's error body in the exception message.
 - **Writes** (RSO-1214): `create_test_cycle`, `add_test_cases_to_cycle` (one `POST /testexecutions` per case, sequential, `automated: False`; raises `AddTestCasesError` with what was already added), `get_or_create_folder(path)` (creates only the last folder of the path). The public API **cannot delete test cycles or executions**, so every write is permanent; test writes by hand on one throwaway cycle.
-- `POST /testexecutions` has no test case version field, and the docs say cases with "call to test", parameters or test data are not supported (`BLOCK-T250` calls `BLOCK-T652`).
+- **Test case versions cannot be chosen** through the API: neither `POST` nor `PUT /testexecutions` has a version field, and `GET /testcases/{key}/versions/{n}` returns a `testScript` that points to the current steps. The docs also say cases with "call to test", parameters or test data are not supported (`BLOCK-T250` calls `BLOCK-T652`).
 - `get_user_name(user)` uses Jira Basic auth with the `jira_login` property: `JIRA_USERNAME` is the full email of the Atlassian account (it is not always `@lsst.org`); a value without `@` gets `@lsst.org` appended for older setups. Accepts an `accountId` string (test executions) or a `{"accountId", "self"}` dict (test cases and cycles).
 - `parse(json_obj, parse)` follows a reference's `self` URL and returns the resolved object (`simple`) or the reference merged with it (`full`).
 - **Parse modes** on `get_test_case`, `get_test_cycle`, `get_test_execution`, `list_test_executions`:
@@ -58,7 +58,7 @@ Every new module must define `__all__` and be star-imported in `__init__.py`.
 ## Not implemented yet / known issues
 
 - **Test Plans**: no methods; `get_test_cycle` has a `TODO` for parsing linked test plans.
-- `get_test_execution(parse="full")` merges the execution's steps with the steps of the **latest** test case version, not the version the execution ran; when the step count changed, its `assert` fails (e.g. `BLOCK-E306`). `test_get_test_execution_full_parse` is marked `xfail` until this is fixed (TODO in the code).
+- `get_test_execution(parse="full")` merges the execution's steps (a copy made when the execution was created) with the test case's **current** steps. If the test case was edited afterwards, even without a new version, the counts differ and its `assert` fails (e.g. `BLOCK-E306` has 5 steps, `BLOCK-T21` v1 now has 4). The API cannot read an old version's steps. `test_get_test_execution_full_parse` is marked `xfail` until this is fixed (TODO in the code).
 - **No PUT**: updating step or execution status is not implemented, even though the class docstring says otherwise.
 - **No pagination** beyond a single page (`maxResults`) in `list_test_executions` / `get_test_cycles` / `get_steps_in_test_case`. The last one matters: the steps endpoint defaults to 10 per page and several cases have more (`BLOCK-T196` 14, `BLOCK-T244` 18), so `parse="full"` silently drops steps.
 - `get_test_case(parse="simple")` passes `parse` through to `self.parse()`, so its fields end up as whole resolved objects instead of scalars. This differs from cycle and execution.

@@ -646,12 +646,14 @@ class ZephyrInterface:
         if parse == "full":
             # Get the test execution and test case steps, they should have the
             # same number of elements (steps).
-            # TODO: this reads the steps of the latest version of the test
-            # case, but the execution may have run an older version (its
-            # `testCase.self` ends in `/versions/<n>`). When the number of
-            # steps changed between versions the assert below fails, e.g.
-            # BLOCK-E306 / BLOCK-T21. Read the steps of the execution's
-            # version instead, if the API allows it.
+            # TODO: an execution keeps its own copy of the steps from when it
+            # was created, but the test case steps are read as they are now.
+            # When the test case was edited afterwards (even without a new
+            # version), the counts differ and the assert below fails, e.g.
+            # BLOCK-E306 has 5 steps and BLOCK-T21 (still version 1) has 4.
+            # The API cannot read the steps of an older version either (its
+            # `testScript.self` points to the current steps). Pair the steps
+            # some other way, or keep the execution's steps when they differ.
             test_execution_steps = await self.get_steps_in_test_execution(
                 test_execution_key
             )

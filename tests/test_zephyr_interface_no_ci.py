@@ -266,11 +266,12 @@ class TestZephyrInterfaceWithRealData(unittest.IsolatedAsyncioTestCase):
 
     # WARNING: This test will fail if you change the numner of steps in the
     # test case.
-    # TODO: remove the xfail once get_test_execution(parse="full") reads the
-    # steps of the test case version the execution used (see the TODO there).
+    # TODO: remove the xfail once get_test_execution(parse="full") handles
+    # executions whose steps differ from the current test case steps (see
+    # the TODO there).
     @pytest.mark.xfail(
-        reason="BLOCK-E306 ran an older version of BLOCK-T21 with fewer steps; "
-        "full parse uses the latest version's steps.",
+        reason="BLOCK-T21 was edited after BLOCK-E306 was created, so their "
+        "step counts differ and full parse asserts.",
         strict=False,
     )
     @pytest.mark.asyncio
