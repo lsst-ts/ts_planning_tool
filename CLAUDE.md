@@ -24,6 +24,9 @@ python/lsst/ts/planning/tool/
   weekly_draft.py       # draft_week(zapi, plan, dry_run): checks everything, then writes
   data/cycle_templates.json  # UI order of the template cycles (API can't give it)
   __init__.py           # star-imports the modules above (and version.py, generated)
+.claude/skills/draft-weekly-test-cycles/
+  SKILL.md              # reading rules: Confluence notes page -> plan JSON -> zapi draft week
+  confluence_page.py    # read-only Confluence helper (stdlib; same Atlassian token)
 tests/
   test_zephyr_interface.py         # mocked, runs in CI
   test_zephyr_interface_no_ci.py   # hits real APIs; skipped without env vars

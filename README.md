@@ -169,6 +169,10 @@ All `get` and `list` commands print JSON to stdout, so you can pipe them to `jq`
 ## Drafting the Weekly Test Cycles
 
 Every week a support scientist creates seven nightly test cycles (Monday to Sunday) from the week's "Test Cycle Publication notes" page in Confluence.
+
+**With Claude Code**, open this repository and ask, for example, "draft the test cycles for week 47".
+The project skill in [`.claude/skills/draft-weekly-test-cycles`](.claude/skills/draft-weekly-test-cycles/SKILL.md) reads the Confluence page (with the same Atlassian token as `zapi`), proposes the plan below, shows the dry run, and creates the cycles only after you approve.
+
 `zapi draft week` does the Zephyr Scale part from a small JSON plan:
 
 ```json
