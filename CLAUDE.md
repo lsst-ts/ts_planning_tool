@@ -99,8 +99,7 @@ Every new module must define `__all__` and be star-imported in `__init__.py`.
 ## Repository state (update as it changes)
 
 As of 2026-11-13:
-- Stacked PRs from splitting old PR #5 (DM-44804) are open: **#8** (utility module → `develop`), **#9** (ZephyrInterface steps/full parse → #8), **#10** (CLI unified `get steps` → #9).
-  After each merges, retarget the next PR's base to `develop`.
-- PR **#7** (`main` → `develop`, version history) and PR **#11** (`update_readme`, token setup docs, now folded into README here) are open.
+- PR **#12** (`tickets/RSO-1214` → `develop`) holds both the DM-44804 work (steps, full parse, `get steps` CLI) and RSO-1214 (weekly test-cycle drafting). It superseded the stacked PRs #8, #9 and #10, which are closed.
+- PR **#7** (`main` → `develop`, version history) and PR **#11** (`update_readme`, token setup docs, now folded into README here) are open. If #11 merges first, expect a README conflict in #12.
 - Untracked files in the repo root (`BLOCK-*.json` payload dumps, a PDF, `build/`, `python/.../schemas/`, `PLAN_RSO-1214.md`, `HANDOFF_*.md`) are local scratch; don't commit them unless asked.
-- PR **#12** (`tickets/RSO-1214` → `tickets/DM-44804-cli`, stack 4/4) adds the weekly test-cycle drafting (`zapi draft week` + skill). Retarget it to `develop` after #10 merges. Local notes in `PLAN_RSO-1214.md`. Throwaway write tests go in `/LSST Survey Plans/2026/sandbox` (`BLOCK-R755`, cancelled).
+- Local RSO-1214 notes are in `PLAN_RSO-1214.md`. Throwaway write tests go in `/LSST Survey Plans/2026/sandbox` (`BLOCK-R755`, cancelled).
