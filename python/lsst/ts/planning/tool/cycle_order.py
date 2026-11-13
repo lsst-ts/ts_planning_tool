@@ -28,6 +28,7 @@ Zephyr Scale UI. Groups follow the `index` of the environments.
 
 __all__ = [
     "PLACEMENT_RULES",
+    "load_cycle_templates",
     "load_template_order",
     "order_template_cases",
     "place_requested_cases",
@@ -47,9 +48,9 @@ PLACEMENT_RULES = {
 }
 
 
-def load_template_order(filename="cycle_templates.json"):
+def load_cycle_templates(filename="cycle_templates.json"):
     """
-    Load the saved order of the test cases in each template test cycle.
+    Load the description of the template test cycles.
 
     The public API returns the test executions of a cycle in the order they
     were created, not in the order shown in the Zephyr Scale UI, so the UI
@@ -63,10 +64,32 @@ def load_template_order(filename="cycle_templates.json"):
     Returns
     -------
     dict
-        Template test cycle key -> list of test case keys in UI order.
+        Template test cycle key -> dict with `label`, `weekdays` (the day
+        names the template is meant for) and `test_cases` (keys in UI order).
     """
-    data = load_json_data(filename, os.path.dirname(__file__))
-    return {key: value["test_cases"] for key, value in data.items()}
+    return load_json_data(filename, os.path.dirname(__file__))
+
+
+def load_template_order(filename="cycle_templates.json"):
+    """
+    Load the saved order of the test cases in each template test cycle.
+
+    Parameters
+    ----------
+    filename : str, optional
+        The name of the file in the package `data` folder.
+
+    Returns
+    -------
+    dict
+        Template test cycle key -> list of test case keys in UI order.
+
+    See also
+    --------
+    load_cycle_templates
+    """
+    templates = load_cycle_templates(filename)
+    return {key: value["test_cases"] for key, value in templates.items()}
 
 
 def _environment_index(case, env_index):

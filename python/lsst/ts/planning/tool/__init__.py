@@ -22,6 +22,7 @@
 from .cli import *
 from .cycle_order import *
 from .utils import *
+from .weekly_draft import *
 from .zephyr_interface import *
 
 try:

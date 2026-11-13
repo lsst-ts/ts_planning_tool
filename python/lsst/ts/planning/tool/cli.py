@@ -28,8 +28,61 @@ import json
 import logging
 import os
 import re
+import sys
 
-from lsst.ts.planning.tool.zephyr_interface import ZephyrInterface
+from lsst.ts.planning.tool.weekly_draft import DraftWeekError, draft_week, format_report
+from lsst.ts.planning.tool.zephyr_interface import AddTestCasesError, ZephyrInterface
+
+
+async def draft_week_command(
+    plan_file, execute=False, output_json=False, verbose=False, **kwargs
+):
+    """Draft the test cycles of a week from a JSON plan (dry run by default)."""
+    with open(plan_file, "r") as file:
+        plan = json.load(file)
+
+    zapi = setup_zephyr_interface()
+    zapi.log.setLevel(logging.INFO if verbose else logging.WARNING)
+
+    try:
+        report = await draft_week(zapi, plan, dry_run=not execute)
+    except ValueError as error:
+        print(f"ERROR: {error}", file=sys.stderr)
+        sys.exit(1)
+    except DraftWeekError as error:
+        print(format_report(error.report))
+        print(f"\nERROR: {error}", file=sys.stderr)
+        sys.exit(1)
+
+    print(json.dumps(report, indent=4) if output_json else format_report(report))
+
+
+async def add_test_cases_command(
+    test_cycle_key,
+    test_case_keys,
+    environment=None,
+    execute=False,
+    verbose=False,
+    **kwargs,
+):
+    """Add test cases to the end of a test cycle (dry run by default)."""
+    test_cases = [{"key": key, "environment": environment} for key in test_case_keys]
+    if not execute:
+        print("DRY RUN: nothing was written. Add --execute to add the test cases.")
+        where = environment or "no environment"
+        for test_case in test_cases:
+            print(f"  would add {test_case['key']} to {test_cycle_key} ({where})")
+        return
+
+    zapi = setup_zephyr_interface()
+    zapi.log.setLevel(logging.INFO if verbose else logging.WARNING)
+    try:
+        added = await zapi.add_test_cases_to_cycle(test_cycle_key, test_cases)
+    except AddTestCasesError as error:
+        print(f"ERROR: {error} ({error.__cause__.message})", file=sys.stderr)
+        sys.exit(1)
+    for item in added:
+        print(f"  added {item['key']} to {test_cycle_key} (execution id {item['id']})")
 
 
 async def get_test_execution(test_execution_key, parse="raw", indent=4, **kwargs):
@@ -176,6 +229,64 @@ def run_zapi_command_line():
     )
     parse_test_executions.add_argument(
         "-v", "--verbose", action="store_true", help="Print verbose output."
+    )
+
+    parse_draft = sub_parsers.add_parser(
+        "draft",
+        help="Draft test cycles in Zephyr Scale from a plan",
+    )
+    sub_parse_draft = parse_draft.add_subparsers()
+    sub_parse_draft.required = True
+
+    parse_draft_week = sub_parse_draft.add_parser(
+        "week",
+        help="Draft the nightly test cycles of a week from a JSON plan. "
+        "Dry run unless --execute is given.",
+    )
+    parse_draft_week.set_defaults(func=draft_week_command)
+    parse_draft_week.add_argument("plan_file", type=str, help="Path to the JSON plan.")
+    parse_draft_week.add_argument(
+        "--execute",
+        action="store_true",
+        help="Create the folder, test cycles and test executions in Zephyr Scale.",
+    )
+    parse_draft_week.add_argument(
+        "--json",
+        dest="output_json",
+        action="store_true",
+        help="Print the report as JSON.",
+    )
+    parse_draft_week.add_argument(
+        "-v", "--verbose", action="store_true", help="Print every request."
+    )
+
+    parse_add = sub_parsers.add_parser(
+        "add",
+        help="Add items to an existing Zephyr Scale entity",
+    )
+    sub_parse_add = parse_add.add_subparsers()
+    sub_parse_add.required = True
+
+    parse_add_test_cases = sub_parse_add.add_parser(
+        "test_cases",
+        help="Add test cases to the end of a test cycle. "
+        "Dry run unless --execute is given.",
+    )
+    parse_add_test_cases.set_defaults(func=add_test_cases_command)
+    parse_add_test_cases.add_argument(
+        "test_cycle_key", type=str, help="e.g. BLOCK-R760"
+    )
+    parse_add_test_cases.add_argument(
+        "test_case_keys", type=str, nargs="+", help="e.g. BLOCK-T724 BLOCK-T563"
+    )
+    parse_add_test_cases.add_argument(
+        "-e", "--environment", type=str, default=None, help="e.g. '6. Night'"
+    )
+    parse_add_test_cases.add_argument(
+        "--execute", action="store_true", help="Add the test cases in Zephyr Scale."
+    )
+    parse_add_test_cases.add_argument(
+        "-v", "--verbose", action="store_true", help="Print every request."
     )
 
     args = parser.parse_args()

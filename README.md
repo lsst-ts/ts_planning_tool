@@ -163,7 +163,67 @@ $ zapi get user <jira-account-id>
 $ zapi list test_executions BLOCK-R21 --only-last --parse simple
 ```
 
-All commands print JSON to stdout, so you can pipe them to `jq` or redirect them to a file.
+All `get` and `list` commands print JSON to stdout, so you can pipe them to `jq` or redirect them to a file.
+
+
+## Drafting the Weekly Test Cycles
+
+Every week a support scientist creates seven nightly test cycles (Monday to Sunday) from the week's "Test Cycle Publication notes" page in Confluence.
+`zapi draft week` does the Zephyr Scale part from a small JSON plan:
+
+```json
+{
+  "project": "BLOCK",
+  "folder": "/LSST Survey Plans/2026/week47",
+  "notes_url": "https://rubinobs.atlassian.net/wiki/spaces/LSSTOps/pages/...",
+  "days": [
+    {"date": "2026-11-16", "template": "BLOCK-R505",
+     "test_cases": [
+       {"key": "BLOCK-T724", "kind": "on_sky"},
+       {"key": "BLOCK-T563", "kind": "calibration"},
+       {"key": "BLOCK-T624", "kind": "on_sky", "version": "2.0"}
+     ]}
+  ]
+}
+```
+
+- `template`: `BLOCK-R505` for Monday to Friday, `BLOCK-R506` for Saturday and Sunday.
+- `test_cases`: the test cases requested for that night, in the page's (priority) order.
+  `kind` decides where each one goes:
+
+  | `kind`        | Environment      | Position               |
+  |---------------|------------------|------------------------|
+  | `daytime`     | `1. Daytime`     | end of the group       |
+  | `on_sky`      | `6. Night`       | start of the group     |
+  | `calibration` | `8. Closed Dome` | end of the cycle       |
+
+  Closed-dome night tests are `calibration`.
+  `version` is optional; the API always uses the latest version, so a different one is only reported as a warning.
+- Optional: `owner_account_id` (by default the owner is you, from your Jira credentials) and `notes_title` (by default `2026 W47 Test Cycle Publication Notes`).
+
+Each cycle is named `<date> LSST Survey Plan`, planned from `<date>T03:00:00Z` to the next day, owned by you, with a link to `notes_url` as its description.
+It gets the template's test cases followed by the requested ones, placed as above; requested test cases already in the template are skipped.
+The Zephyr Scale UI lists the test cases in the order they are created, so this is the order the night crew sees.
+
+```
+$ zapi draft week plan.json             # dry run: checks everything, prints the cycles, writes nothing
+$ zapi draft week plan.json --execute   # creates the week folder (if needed), the cycles and their test cases
+```
+
+Before writing anything, the tool checks the plan, that every requested test case exists, and that no cycle with the same name is already in the week folder (so a second run does not create duplicates).
+**The Zephyr Scale API cannot delete test cycles or test executions**, so always read the dry run first.
+If something goes wrong during `--execute`, the tool stops and prints what it already created.
+
+To add a forgotten test case to the end of an existing cycle:
+
+```
+$ zapi add test_cases BLOCK-R760 BLOCK-T724 --environment "6. Night"            # dry run
+$ zapi add test_cases BLOCK-R760 BLOCK-T724 --environment "6. Night" --execute
+```
+
+The order of the template test cases cannot be read from the API, so it is kept in
+[`cycle_templates.json`](python/lsst/ts/planning/tool/data/cycle_templates.json).
+When a template changes in Zephyr Scale, update that file too; `draft week` warns when they differ.
 
 
 ## Unit Tests

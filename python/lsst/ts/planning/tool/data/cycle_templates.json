@@ -1,6 +1,13 @@
 {
     "BLOCK-R505": {
         "label": "Weekday template (Monday to Friday)",
+        "weekdays": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+        ],
         "test_cases": [
             "BLOCK-T17",
             "BLOCK-T20",
@@ -28,6 +35,10 @@
     },
     "BLOCK-R506": {
         "label": "Weekend template (Saturday and Sunday)",
+        "weekdays": [
+            "Saturday",
+            "Sunday"
+        ],
         "test_cases": [
             "BLOCK-T17",
             "BLOCK-T18",

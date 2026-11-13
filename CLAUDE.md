@@ -21,6 +21,7 @@ python/lsst/ts/planning/tool/
   cli.py                # zapi CLI (argparse); entry point run_zapi_command_line
   utils.py              # load_json_data(filename, path) -> reads <path>/data/<filename>
   cycle_order.py        # pure functions: order template cases, place requested cases
+  weekly_draft.py       # draft_week(zapi, plan, dry_run): checks everything, then writes
   data/cycle_templates.json  # UI order of the template cycles (API can't give it)
   __init__.py           # star-imports the modules above (and version.py, generated)
 tests/
@@ -98,4 +99,5 @@ As of 2026-11-13:
 - Stacked PRs from splitting old PR #5 (DM-44804) are open: **#8** (utility module → `develop`), **#9** (ZephyrInterface steps/full parse → #8), **#10** (CLI unified `get steps` → #9).
   After each merges, retarget the next PR's base to `develop`.
 - PR **#7** (`main` → `develop`, version history) and PR **#11** (`update_readme`, token setup docs, now folded into README here) are open.
-- Untracked files in the repo root (`BLOCK-*.json` payload dumps, a PDF, `build/`, `python/.../schemas/`) are local scratch; don't commit them unless asked.
+- Untracked files in the repo root (`BLOCK-*.json` payload dumps, a PDF, `build/`, `python/.../schemas/`, `PLAN_RSO-1214.md`, `HANDOFF_*.md`) are local scratch; don't commit them unless asked.
+- `tickets/RSO-1214` (not pushed) adds the weekly test-cycle drafting (`zapi draft week`). The plan, decisions and API findings are in `PLAN_RSO-1214.md`. Throwaway write tests go in `/LSST Survey Plans/2026/sandbox` (`BLOCK-R755`, cancelled).
