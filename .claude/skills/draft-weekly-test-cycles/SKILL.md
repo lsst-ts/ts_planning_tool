@@ -36,8 +36,15 @@ The tool only adds test cases; the night crew removes the ones that were done or
    If `zapi` is not installed, run it from the repository with
    `PYTHONPATH=python python -c "from lsst.ts.planning.tool import run_zapi_command_line; run_zapi_command_line()" draft week <plan.json>`.
    Fix any error it reports (unknown test case, existing cycles, …) and run it again.
-6. **Execute only after an explicit yes:** `zapi draft week <plan.json> --execute`.
+6. **Execute only after an explicit yes**, keeping the JSON report:
+   `zapi draft week <plan.json> --execute --json > <tmp>/report.json`.
    Report the seven cycle keys. If it stops with an error, show what it created; do not run it again blindly (it refuses existing cycle names, so a re-run needs the created cycles handled first).
+7. **Link the cycles from the page**, if the person wants it (ask; it edits their page). Preview, then save:
+   ```
+   python .claude/skills/draft-weekly-test-cycles/link_cycles.py <page> <tmp>/report.json
+   python .claude/skills/draft-weekly-test-cycles/link_cycles.py <page> <tmp>/report.json --execute
+   ```
+   It fills each night's empty "Test Cycle:" line and links "Test Cycles for this week" to the week folder. It refuses if the page does not have one empty "Test Cycle:" line per night (fill those by hand), and the save fails if someone saved the page in between (run it again).
 
 ## Plan format
 
@@ -101,4 +108,4 @@ Then the dry run output from `zapi draft week`, which lists every cycle in its f
 ## After executing
 
 - Report the seven cycle keys and the folder.
-- Offer to fill the "Test Cycle:" line of each night on the Confluence page; this is not automated yet, so the person may prefer to do it.
+- Offer step 7 (links on the Confluence page).

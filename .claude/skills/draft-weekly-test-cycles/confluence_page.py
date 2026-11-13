@@ -21,8 +21,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """Read a "Test Cycle Publication notes" page from Confluence as text.
 
-Uses the same Atlassian credentials as zapi (JIRA_USERNAME, JIRA_API_TOKEN);
-read-only. Standard library only.
+Uses the same Atlassian credentials as zapi (JIRA_USERNAME, JIRA_API_TOKEN).
+This script only reads; link_cycles.py uses `request` to save a page.
+Standard library only.
 
     python confluence_page.py --list          # latest notes pages
     python confluence_page.py 2259222570      # one page, by id or URL
@@ -47,20 +48,24 @@ SITE = "https://rubinobs.atlassian.net"
 NOTES_PARENT_ID = "2101608457"
 
 
-def request(path):
-    """GET a Confluence REST path and return the decoded JSON."""
+def request(path, method="GET", payload=None):
+    """Call a Confluence REST path and return the decoded JSON."""
     username = os.environ.get("JIRA_USERNAME", "")
     if "@" not in username:
         username = f"{username}@lsst.org"
     token = os.environ["JIRA_API_TOKEN"]
     auth = base64.b64encode(f"{username}:{token}".encode()).decode()
+    headers = {
+        "Authorization": f"Basic {auth}",
+        "Accept": "application/json",
+        "Accept-Encoding": "gzip",
+    }
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode()
+        headers["Content-Type"] = "application/json"
     req = urllib.request.Request(
-        f"{SITE}/wiki/rest/api/{path}",
-        headers={
-            "Authorization": f"Basic {auth}",
-            "Accept": "application/json",
-            "Accept-Encoding": "gzip",
-        },
+        f"{SITE}/wiki/rest/api/{path}", data=data, method=method, headers=headers
     )
     with urllib.request.urlopen(req, timeout=30) as response:
         body = response.read()
