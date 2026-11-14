@@ -1,0 +1,97 @@
+{
+    "next": null,
+    "startAt": 0,
+    "maxResults": 1000,
+    "total": 8,
+    "isLast": true,
+    "values": [
+        {
+            "id": 47321527,
+            "parentId": null,
+            "name": "LSST Survey Plans",
+            "index": 2,
+            "folderType": "TEST_CYCLE",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            }
+        },
+        {
+            "id": 57322463,
+            "parentId": 47321527,
+            "name": "2026",
+            "index": 0,
+            "folderType": "TEST_CYCLE",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            }
+        },
+        {
+            "id": 57322464,
+            "parentId": 57322463,
+            "name": "week41",
+            "index": 3,
+            "folderType": "TEST_CYCLE",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            }
+        },
+        {
+            "id": 57918290,
+            "parentId": 57322463,
+            "name": "week42",
+            "index": 2,
+            "folderType": "TEST_CYCLE",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            }
+        },
+        {
+            "id": 58367027,
+            "parentId": 57322463,
+            "name": "week43",
+            "index": 1,
+            "folderType": "TEST_CYCLE",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            }
+        },
+        {
+            "id": 58941929,
+            "parentId": 57322463,
+            "name": "week44",
+            "index": 0,
+            "folderType": "TEST_CYCLE",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            }
+        },
+        {
+            "id": 60883093,
+            "parentId": 57322463,
+            "name": "week45",
+            "index": 4,
+            "folderType": "TEST_CYCLE",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            }
+        },
+        {
+            "id": 61514676,
+            "parentId": 57322463,
+            "name": "week46",
+            "index": 5,
+            "folderType": "TEST_CYCLE",
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            }
+        }
+    ]
+}

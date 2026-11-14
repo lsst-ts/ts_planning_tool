@@ -1,0 +1,1 @@
+Add Zephyr Scale test-execution step retrieval and full-parse support to ``ZephyrInterface``, including ``get_steps_in_test_execution`` and recursive sub-step resolution for called test cases.

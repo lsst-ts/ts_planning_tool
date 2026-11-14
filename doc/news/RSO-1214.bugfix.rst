@@ -1,0 +1,1 @@
+``JIRA_USERNAME`` is now the email address of the Atlassian account, so accounts that do not use an ``@lsst.org`` address can log in to Jira. A bare username still gets ``@lsst.org`` appended.

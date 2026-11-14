@@ -20,6 +20,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .cli import *
+from .cycle_order import *
+from .utils import *
+from .weekly_draft import *
 from .zephyr_interface import *
 
 try:

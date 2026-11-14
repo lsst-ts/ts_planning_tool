@@ -1,0 +1,1 @@
+Add a ``load_json_data`` utility function and JSON test fixtures for the Zephyr Scale API.

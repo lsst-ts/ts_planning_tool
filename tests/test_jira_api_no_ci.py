@@ -4,6 +4,7 @@ import unittest
 import aiohttp
 import pytest
 from aiohttp import BasicAuth
+from lsst.ts.planning.tool.zephyr_interface import SESSION_HEADERS, ZephyrInterface
 
 JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"
 
@@ -17,10 +18,11 @@ JIRA_BASE_URL = "https://rubinobs.atlassian.net/rest/api/2/"
     reason="Skipping test because JIRA_API_TOKEN is not defined",
 )
 class TestJiraAPI(unittest.IsolatedAsyncioTestCase):
-
     def setUp(self):
         self.jira_api_token = os.getenv("JIRA_API_TOKEN")
-        self.jira_username = os.getenv("JIRA_USERNAME")
+        self.jira_login = ZephyrInterface(
+            jira_username=os.getenv("JIRA_USERNAME")
+        ).jira_login
 
     @pytest.mark.asyncio
     async def test_jira_api_token(self):
@@ -28,8 +30,9 @@ class TestJiraAPI(unittest.IsolatedAsyncioTestCase):
         url = f"{JIRA_BASE_URL}{endpoint}"
 
         async with aiohttp.ClientSession(
-            auth=BasicAuth(f"{self.jira_username}@lsst.org", self.jira_api_token),
+            auth=BasicAuth(self.jira_login, self.jira_api_token),
             raise_for_status=True,
+            headers=SESSION_HEADERS,
         ) as session:
             async with session.get(url) as response:
                 if response.status == 200:

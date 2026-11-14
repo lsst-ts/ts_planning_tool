@@ -1,0 +1,211 @@
+{
+    "BLOCK-R505": {
+        "label": "Weekday template (Monday to Friday)",
+        "weekdays": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+        ],
+        "test_cases": [
+            {
+                "key": "BLOCK-T17",
+                "environment": "AuxTel"
+            },
+            {
+                "key": "BLOCK-T20",
+                "environment": "AuxTel"
+            },
+            {
+                "key": "BLOCK-T19",
+                "environment": "AuxTel"
+            },
+            {
+                "key": "BLOCK-T529",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T594",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T3",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T4",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T144",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T145",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T70",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T250",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T239",
+                "environment": "2. Late Afternoon"
+            },
+            {
+                "key": "BLOCK-T658",
+                "environment": "2. Late Afternoon"
+            },
+            {
+                "key": "BLOCK-T245",
+                "environment": "2. Late Afternoon"
+            },
+            {
+                "key": "BLOCK-T51",
+                "environment": "3. Early Night"
+            },
+            {
+                "key": "BLOCK-T625",
+                "environment": "3. Early Night"
+            },
+            {
+                "key": "BLOCK-T539",
+                "environment": "6. Night"
+            },
+            {
+                "key": "BLOCK-T624",
+                "environment": "6. Night"
+            },
+            {
+                "key": "BLOCK-T664",
+                "environment": "7. End Night"
+            },
+            {
+                "key": "BLOCK-T196",
+                "environment": "7. End Night"
+            },
+            {
+                "key": "BLOCK-T619",
+                "environment": "7. End Night"
+            },
+            {
+                "key": "BLOCK-T242",
+                "environment": "7. End Night"
+            }
+        ]
+    },
+    "BLOCK-R506": {
+        "label": "Weekend template (Saturday and Sunday)",
+        "weekdays": [
+            "Saturday",
+            "Sunday"
+        ],
+        "test_cases": [
+            {
+                "key": "BLOCK-T17",
+                "environment": "AuxTel"
+            },
+            {
+                "key": "BLOCK-T18",
+                "environment": "AuxTel"
+            },
+            {
+                "key": "BLOCK-T20",
+                "environment": "AuxTel"
+            },
+            {
+                "key": "BLOCK-T19",
+                "environment": "AuxTel"
+            },
+            {
+                "key": "BLOCK-T529",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T594",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T683",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T3",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T4",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T144",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T145",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T244",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T70",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T250",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T239",
+                "environment": "2. Late Afternoon"
+            },
+            {
+                "key": "BLOCK-T658",
+                "environment": "2. Late Afternoon"
+            },
+            {
+                "key": "BLOCK-T245",
+                "environment": "2. Late Afternoon"
+            },
+            {
+                "key": "BLOCK-T51",
+                "environment": "3. Early Night"
+            },
+            {
+                "key": "BLOCK-T625",
+                "environment": "3. Early Night"
+            },
+            {
+                "key": "BLOCK-T539",
+                "environment": "6. Night"
+            },
+            {
+                "key": "BLOCK-T624",
+                "environment": "6. Night"
+            },
+            {
+                "key": "BLOCK-T664",
+                "environment": "7. End Night"
+            },
+            {
+                "key": "BLOCK-T196",
+                "environment": "7. End Night"
+            },
+            {
+                "key": "BLOCK-T619",
+                "environment": "7. End Night"
+            },
+            {
+                "key": "BLOCK-T242",
+                "environment": "7. End Night"
+            }
+        ]
+    }
+}

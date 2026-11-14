@@ -1,0 +1,1 @@
+Add ``zapi draft week`` to create the seven nightly test cycles of a week from a JSON plan (dry run by default), ``zapi add test_cases``, and the write methods behind them in ``ZephyrInterface``: ``post``, ``put``, ``create_test_cycle``, ``add_test_cases_to_cycle``, ``set_test_cycle_status``, ``get_or_create_folder``, plus paginated reads with ``get_all``.

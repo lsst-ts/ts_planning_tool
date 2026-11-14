@@ -1,0 +1,135 @@
+{
+    "next": null,
+    "startAt": 0,
+    "maxResults": 10,
+    "total": 9,
+    "isLast": true,
+    "values": [
+        {
+            "inline": {
+                "description": "<strong>Ensure hexapods compensation mode is disabled</strong><br><br>Before sending both hexapods to their parking position (0 um / 0\u00ba in all axes), we need to power off the compensation mode. Otherwise, they will still have an offset that comes from the compensation mode (look-up tables). Disabling this ensures that al the struts are back to their 0 raw positon.",
+                "testData": null,
+                "expectedResult": "",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        },
+        {
+            "inline": {
+                "description": "Move MTHexapod:1 (Camera) to origin.",
+                "testData": null,
+                "expectedResult": "Use the <a href=\"https://summit-lsp.lsst.codes/chronograf/sources/1/dashboards/118?refresh=5s&tempVars%5BSalIndex%5D=Camera&tempVars%5Bsampling%5D=High%20Performance&lower=now%28%29%20-%2015m\">Chronograf MTHexapod Dashboard</a> to confirm the movement.",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        },
+        {
+            "inline": {
+                "description": "Move MTHexapod:2 (M2) to origin.",
+                "testData": null,
+                "expectedResult": "Use the <a href=\"https://summit-lsp.lsst.codes/chronograf/sources/1/dashboards/118?refresh=5s&tempVars%5BSalIndex%5D=Camera&tempVars%5Bsampling%5D=High%20Performance&lower=now%28%29%20-%2015m\">Chronograf MTHexapod Dashboard</a> to confirm the movement.",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        },
+        {
+            "inline": {
+                "description": "Disable MTHexapod:1 and MTHexapod:2 using ASummaryState in LOVE or via script.",
+                "testData": null,
+                "expectedResult": "MTHexapod.1 and MTHexapod.2 are <strong>DISABLED</strong>.",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        },
+        {
+            "inline": {
+                "description": "Put MTHexapod:1 and MTHexapod:2 into standby using ASummaryState in LOVE or via script.",
+                "testData": null,
+                "expectedResult": "MTHexapod.1 and MTHexapod.2 are <strong>STANDBY</strong>.",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        },
+        {
+            "inline": {
+                "description": "Copy log from MTHexapod:1 (camera hexapod) Password in 1password &gt; camera hexapod pxi<br><br>1. Type on the terminal:&nbsp;<br><span spellcheck=\"false\"><strong>scp admin@camhex-pxi-controller.cp.lsst.org:/var/log/messages* .</strong></span><br><br><span spellcheck=\"false\"><strong>2.&nbsp;</strong></span>Compress all files (YYYMMMDD: the obsdate):<br><span spellcheck=\"false\"><strong>tar -czvf camhex_pxi_log_files_YYYYMMDD.tar.gz messages*</strong></span><br><br>3. Put the .gz file on ticket <a href=\"https://rubinobs.atlassian.net/browse/SITCOM-1771\" target=\"_blank\" rel=\"noopener noreferrer\">SITCOM-1771</a>",
+                "testData": null,
+                "expectedResult": "Upload the log from Cam hex pxi to&nbsp;<a href=\"https://rubinobs.atlassian.net/browse/SITCOM-1771\" target=\"_blank\" rel=\"noopener noreferrer\">SITCOM-1771</a>.&nbsp;",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        },
+        {
+            "inline": {
+                "description": "Copy log from MTHexapod:2. Password in 1password &gt; m2 hexapod pxi<br>1. Type on the terminal:&nbsp;<br><span spellcheck=\"false\"><strong>scp admin@m2hex-pxi-controller.cp.lsst.org:/var/log/messages* .</strong></span><br><br><span spellcheck=\"false\"><strong>2.&nbsp;</strong></span>Compress all files (YYYMMMDD: the obsdate):<br><span spellcheck=\"false\"><strong>tar -czvf camhex_pxi_log_files_YYYYMMDD.tar.gz messages*</strong></span><br><br>3. Put the .gz file on ticket <a href=\"https://rubinobs.atlassian.net/browse/SITCOM-1772\" target=\"_blank\" rel=\"noopener noreferrer\">SITCOM-1772</a>",
+                "testData": null,
+                "expectedResult": "Upload the log from Cam hex pxi to&nbsp;<a href=\"https://rubinobs.atlassian.net/browse/SITCOM-1772\" target=\"_blank\" rel=\"noopener noreferrer\">SITCOM-1772</a>",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        },
+        {
+            "inline": {
+                "description": "For <em>MTCamHexapod</em>, while in the LSST-WAP, connect to <a href=\"https://tea-pdu01.cp.lsst.org/\" id=\"isPasted\"><em>https://tea-pdu01.cp.lsst.org/</em></a> using the credentials stored in the <em>MainTel Vault</em> of <em>LSST 1Password</em> as&nbsp;<em>PDU Utilities Cabinet</em>. Click on Outlets on the left hand side menu to open the outlets screen.<br>Turn off PXI which is outlet 8, then turn off the drives correspond to outlet 4 in the <em>PDU</em>.",
+                "testData": null,
+                "expectedResult": "<ul><li>CamHexapod's PXI and drives are off.</li></ul>",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        },
+        {
+            "inline": {
+                "description": "For <em>MTM2Hexapod</em>, while in the LSST-WAP, connect to <a href=\"https://pdu1-tea-as02.cp.lsst.org\"><em>https://pdu1-tea-as02.cp.lsst.org</em></a> using the credentials stored in the <em>MainTel Vault</em> of <em>LSST 1Password</em> as&nbsp;<em>pdu1-tea-as02.cp.lsst.org</em>. Click on Outlets on the left hand side menu to open the outlets screen.<br>Turn off PXI which is outlet 2, then turn off the drives correspond to outlet 1 in the <em>PDU</em>.",
+                "testData": null,
+                "expectedResult": "M2Hexapod's PXI and drives are off.",
+                "actualResult": "",
+                "testDataRowNumber": null,
+                "reflectRef": null,
+                "status": {
+                    "id": 6360081,
+                    "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360081"
+                }
+            }
+        }
+    ]
+}

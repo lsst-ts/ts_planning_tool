@@ -1,0 +1,1 @@
+Update the ``zapi`` command line interface with a unified ``get steps`` command that accepts either a test case or a test execution key, a ``--verbose`` flag for ``list test_executions``, and a reusable ``setup_logging`` helper.
