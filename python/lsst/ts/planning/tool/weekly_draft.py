@@ -249,10 +249,13 @@ async def draft_week(zapi, plan, dry_run=True, templates=None):
             environment = env_name.get(case["environmentId"])
             wanted = saved_env.get(case["key"])
             if wanted and wanted.strip() != (environment or "").strip():
+                where = (
+                    f"is in {environment!r}" if environment else "has no environment"
+                )
                 report["warnings"].append(
-                    f"{key}: {case['key']} is in {environment!r} in Zephyr "
-                    f"Scale but in {wanted!r} in the saved template; using "
-                    f"{wanted!r} (update the template in Zephyr Scale)."
+                    f"{key}: {case['key']} {where} in Zephyr Scale but is in "
+                    f"{wanted!r} in the saved template; using {wanted!r} "
+                    f"(update the template in Zephyr Scale)."
                 )
                 environment = wanted
             live.append({"key": case["key"], "environment": environment})

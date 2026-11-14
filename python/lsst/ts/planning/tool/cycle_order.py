@@ -42,11 +42,16 @@ from .utils import load_json_data
 # Where each kind of requested test case goes in a nightly test cycle:
 # (environment, "start" or "end" of that environment's group, anchor).
 # When the anchor test case is in the cycle, the requested test cases go
-# right before it instead: on-sky tests run after the initial alignment
-# (BLOCK-T539) and before the survey (BLOCK-T624).
+# right before it instead:
+# - daytime tests before the TMA unpark/checkout (BLOCK-T250), the last
+#   thing of the day;
+# - on-sky tests after the initial alignment (BLOCK-T539) and before the
+#   survey (BLOCK-T624).
+# Afternoon work such as venting or dome-opening tests is `late_afternoon`.
 # Closed-dome night tests count as calibrations.
 PLACEMENT_RULES = {
-    "daytime": ("1. Daytime", "end", None),
+    "daytime": ("1. Daytime", "end", "BLOCK-T250"),
+    "late_afternoon": ("2. Late Afternoon", "start", None),
     "on_sky": ("6. Night", "end", "BLOCK-T624"),
     "calibration": ("8. Closed Dome", "end", None),
 }

@@ -197,7 +197,8 @@ The project skill in [`.claude/skills/draft-weekly-test-cycles`](.claude/skills/
 
   | `kind`        | Environment      | Position               |
   |---------------|------------------|------------------------|
-  | `daytime`     | `1. Daytime`     | end of the group       |
+  | `daytime`     | `1. Daytime`     | right before `BLOCK-T250` (TMA unpark, the last daytime task); end of the group if there is no `T250` |
+  | `late_afternoon` | `2. Late Afternoon` | start of the group (venting or dome-opening tests) |
   | `on_sky`      | `6. Night`       | right before `BLOCK-T624` (the survey), after the initial alignment; end of the group if there is no `T624` |
   | `calibration` | `8. Closed Dome` | end of the cycle       |
 

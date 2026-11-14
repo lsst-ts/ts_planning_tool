@@ -123,23 +123,15 @@
                 "environment": "AuxTel"
             },
             {
+                "key": "BLOCK-T529",
+                "environment": "1. Daytime"
+            },
+            {
                 "key": "BLOCK-T594",
                 "environment": "1. Daytime"
             },
             {
-                "key": "BLOCK-T244",
-                "environment": "1. Daytime"
-            },
-            {
-                "key": "BLOCK-T145",
-                "environment": "1. Daytime"
-            },
-            {
-                "key": "BLOCK-T144",
-                "environment": "1. Daytime"
-            },
-            {
-                "key": "BLOCK-T529",
+                "key": "BLOCK-T683",
                 "environment": "1. Daytime"
             },
             {
@@ -151,15 +143,23 @@
                 "environment": "1. Daytime"
             },
             {
+                "key": "BLOCK-T144",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T145",
+                "environment": "1. Daytime"
+            },
+            {
+                "key": "BLOCK-T244",
+                "environment": "1. Daytime"
+            },
+            {
                 "key": "BLOCK-T70",
                 "environment": "1. Daytime"
             },
             {
                 "key": "BLOCK-T250",
-                "environment": "1. Daytime"
-            },
-            {
-                "key": "BLOCK-T51",
                 "environment": "1. Daytime"
             },
             {
@@ -171,11 +171,15 @@
                 "environment": "2. Late Afternoon"
             },
             {
-                "key": "BLOCK-T625",
+                "key": "BLOCK-T245",
+                "environment": "2. Late Afternoon"
+            },
+            {
+                "key": "BLOCK-T51",
                 "environment": "3. Early Night"
             },
             {
-                "key": "BLOCK-T245",
+                "key": "BLOCK-T625",
                 "environment": "3. Early Night"
             },
             {
@@ -187,6 +191,10 @@
                 "environment": "6. Night"
             },
             {
+                "key": "BLOCK-T664",
+                "environment": "7. End Night"
+            },
+            {
                 "key": "BLOCK-T196",
                 "environment": "7. End Night"
             },
@@ -196,10 +204,6 @@
             },
             {
                 "key": "BLOCK-T242",
-                "environment": "7. End Night"
-            },
-            {
-                "key": "BLOCK-T664",
                 "environment": "7. End Night"
             }
         ]

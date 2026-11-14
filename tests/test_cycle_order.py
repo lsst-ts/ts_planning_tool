@@ -33,7 +33,7 @@ class TestCycleOrder(unittest.TestCase):
     def test_load_template_order(self):
         self.assertSetEqual(set(self.order), {"BLOCK-R505", "BLOCK-R506"})
         self.assertEqual(len(self.order["BLOCK-R505"]), 22)
-        self.assertEqual(len(self.order["BLOCK-R506"]), 24)
+        self.assertEqual(len(self.order["BLOCK-R506"]), 25)
         for cases in self.order.values():
             self.assertEqual(len(cases), len(set(cases)))
 
@@ -87,9 +87,11 @@ class TestCycleOrder(unittest.TestCase):
         cases, skipped = place_requested_cases(self.r505, requested, self.env_index)
         result = keys(cases)
 
-        # Daytime: end of 1. Daytime, after T250 (TMA unpark, last of the day).
-        self.assertEqual(result[result.index("BLOCK-T250") + 1], "BLOCK-T600")
-        self.assertEqual(result[result.index("BLOCK-T600") + 1], "BLOCK-T239")
+        # Daytime: right before T250 (TMA unpark, last of the day).
+        i = result.index("BLOCK-T600")
+        self.assertListEqual(
+            result[i - 1 : i + 2], ["BLOCK-T70", "BLOCK-T600", "BLOCK-T250"]
+        )
         # On-sky: after the alignment (T539), right before the survey (T624),
         # in page order.
         i = result.index("BLOCK-T700")
@@ -113,6 +115,37 @@ class TestCycleOrder(unittest.TestCase):
             ],
         )
         self.assertEqual(len(self.r505), 22)  # input not modified
+
+    def test_place_late_afternoon(self):
+        cases, _ = place_requested_cases(
+            self.r505,
+            [
+                {"key": "BLOCK-T751", "kind": "late_afternoon"},
+                {"key": "BLOCK-T752", "kind": "late_afternoon"},
+            ],
+            self.env_index,
+        )
+
+        result = keys(cases)
+        i = result.index("BLOCK-T751")
+        self.assertListEqual(
+            result[i - 1 : i + 3],
+            ["BLOCK-T250", "BLOCK-T751", "BLOCK-T752", "BLOCK-T239"],
+        )
+        self.assertEqual(cases[i]["environment"], "2. Late Afternoon")
+
+    def test_place_daytime_without_tma_unpark(self):
+        # No T250 (anchor): daytime goes to the end of 1. Daytime.
+        template = [case for case in self.r505 if case["key"] != "BLOCK-T250"]
+
+        cases, _ = place_requested_cases(
+            template, [{"key": "BLOCK-T600", "kind": "daytime"}], self.env_index
+        )
+
+        result = keys(cases)
+        i = result.index("BLOCK-T600")
+        self.assertEqual(result[i - 1], "BLOCK-T70")
+        self.assertEqual(result[i + 1], "BLOCK-T239")
 
     def test_place_on_sky_without_survey(self):
         # No T624 (anchor): on-sky goes to the end of 6. Night.

@@ -65,7 +65,8 @@ The tool only adds test cases; the night crew removes the ones that were done or
 - `folder`: ISO week number of the Monday, two digits (`week47`, `week05`).
 - `template`: `BLOCK-R505` Monday–Friday, `BLOCK-R506` Saturday–Sunday.
 - `kind` (where the case goes in the cycle):
-  - `daytime`: end of `1. Daytime`
+  - `daytime`: `1. Daytime`, right before the TMA unpark (`BLOCK-T250`), the last daytime task
+  - `late_afternoon`: start of `2. Late Afternoon`, for afternoon work such as venting or dome-opening tests (W47: `BLOCK-T751`, the new venting script)
   - `on_sky`: `6. Night`, after the initial alignment and right before the survey (`BLOCK-T624`)
   - `calibration`: end of the cycle, `8. Closed Dome`
 - `exclude` (optional, per night): template test cases to leave out of that night, e.g. `["BLOCK-T625", "BLOCK-T539"]`. Only with the person's agreement (see the reading rules).
@@ -93,7 +94,7 @@ Which items become test cases:
 
 Which nights and which kind, by section (pages differ by author; match by meaning, not exact titles):
 - **Closed-dome / calibration menu** ("Closed-Dome Night Tests", "Closed-dome test menu for the week"): `calibration`, **all seven nights**.
-- **Weekend daytime tests** ("Weekend Day Engineering Tests"): `daytime`, **Saturday and Sunday only**.
+- **Weekend daytime tests** ("Weekend Day Engineering Tests"): `daytime`, **Saturday and Sunday only**; use `late_afternoon` for the ones that belong with the afternoon venting / dome opening (W47: `BLOCK-T751`).
 - **On-sky engineering menu** ("On-Sky Engineering Tests") with no night given: `on_sky`, **Monday to Friday**. Ask the person whether the weekend should get them too.
 - **Per-night notes** ("Test Cycle Notes", "### Monday - …"): a test case mentioned under a night goes into that night only. Its kind follows what it is: on-sky tests (stability tests, surveys, alignment) `on_sky`; in-dome or calibration work `calibration`; daytime work `daytime`. When the per-night notes and the menu disagree, the per-night notes win for that night; mention it.
 - Anything else ambiguous (a test with "only on FBS nights", "Friday if not done before", a menu with no clear section): propose your reading and ask.
@@ -105,7 +106,8 @@ A short table per kind with the night(s), then the skipped items:
 ```
 on_sky (Mon–Fri, before T624):       BLOCK-T769, BLOCK-T770, BLOCK-T724
 calibration (all nights, end):       BLOCK-T563, BLOCK-T523, …
-daytime (Sat–Sun, end of 1. Daytime): BLOCK-T751, BLOCK-T754
+daytime (Sat–Sun, before T250):      BLOCK-T754
+late_afternoon (Sat–Sun, start):     BLOCK-T751
 Skipped: SVAB-20 (Jira ticket), Giant Donut Dither (NEED TEST CASE), …
 Questions: …
 ```

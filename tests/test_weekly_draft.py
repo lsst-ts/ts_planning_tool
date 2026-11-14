@@ -33,6 +33,7 @@ ENVIRONMENTS = {
     "BLOCK-T19": "AuxTel",
     "BLOCK-T594": "1. Daytime",
     "BLOCK-T244": "1. Daytime",
+    "BLOCK-T683": "1. Daytime",
     "BLOCK-T529": "1. Daytime",
     "BLOCK-T250": "1. Daytime",
     "BLOCK-T145": "1. Daytime",
@@ -186,7 +187,7 @@ class TestWeeklyDraft(unittest.IsolatedAsyncioTestCase):
         saturday = report["days"][5]
         self.assertEqual(saturday["template"], "BLOCK-R506")
         result = keys(saturday)
-        self.assertEqual(result[result.index("BLOCK-T51") + 1], "BLOCK-T902")
+        self.assertEqual(result[result.index("BLOCK-T902") + 1], "BLOCK-T250")
 
         self.assertEqual(
             report["description"],
@@ -295,7 +296,7 @@ class TestWeeklyDraft(unittest.IsolatedAsyncioTestCase):
         self.assertNotIn("BLOCK-T625", keys(saturday))
         self.assertNotIn("BLOCK-T539", keys(saturday))
         self.assertListEqual(saturday["excluded"], ["BLOCK-T625", "BLOCK-T539"])
-        self.assertEqual(len(saturday["test_cases"]), 24 - 2 + 3)
+        self.assertEqual(len(saturday["test_cases"]), 25 - 2 + 3)
         # Other nights keep them.
         self.assertIn("BLOCK-T625", keys(report["days"][6]))
         self.assertListEqual(report["days"][6]["excluded"], [])
