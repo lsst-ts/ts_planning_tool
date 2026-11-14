@@ -227,8 +227,9 @@ $ zapi add test_cases BLOCK-R760 BLOCK-T724 --environment "6. Night" --execute
 ```
 
 The order of the template test cases cannot be read from the API, so it is kept in
-[`cycle_templates.json`](python/lsst/ts/planning/tool/data/cycle_templates.json).
-When a template changes in Zephyr Scale, update that file too; `draft week` warns when they differ.
+[`cycle_templates.json`](python/lsst/ts/planning/tool/data/cycle_templates.json), with the environment (group) of each test case.
+The saved environments win over the ones in the Zephyr Scale template, so the order and groups can be fixed there first.
+When a template changes in Zephyr Scale, update that file too; `draft week` warns when they differ (test cases or environments).
 
 
 ## Unit Tests

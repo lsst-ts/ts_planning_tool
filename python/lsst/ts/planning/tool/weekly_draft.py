@@ -58,6 +58,7 @@ from .cycle_order import (
     load_cycle_templates,
     order_template_cases,
     place_requested_cases,
+    template_entries,
 )
 from .zephyr_interface import AddTestCasesError
 
@@ -238,18 +239,41 @@ async def draft_week(zapi, plan, dry_run=True, templates=None):
     env_name = {env["id"]: env["name"].strip() for env in environments}
     env_index = {env["name"].strip(): env["index"] for env in environments}
 
-    # Templates, in their saved UI order.
+    # Templates, in their saved UI order and with their saved environments.
     ordered_templates = {}
     for key in dict.fromkeys(day["template"] for day in days):
-        live = [
-            {"key": case["key"], "environment": env_name.get(case["environmentId"])}
-            for case in await zapi.list_test_cases_in_cycle(key)
-        ]
+        saved = template_entries(templates[key])
+        saved_env = {entry["key"]: entry["environment"] for entry in saved}
+        live = []
+        for case in await zapi.list_test_cases_in_cycle(key):
+            environment = env_name.get(case["environmentId"])
+            wanted = saved_env.get(case["key"])
+            if wanted and wanted.strip() != (environment or "").strip():
+                report["warnings"].append(
+                    f"{key}: {case['key']} is in {environment!r} in Zephyr "
+                    f"Scale but in {wanted!r} in the saved template; using "
+                    f"{wanted!r} (update the template in Zephyr Scale)."
+                )
+                environment = wanted
+            live.append({"key": case["key"], "environment": environment})
+
         cases, warnings = order_template_cases(
-            templates[key]["test_cases"], live, env_index
+            [entry["key"] for entry in saved], live, env_index
         )
         ordered_templates[key] = cases
         report["warnings"] += [f"{key}: {warning}" for warning in warnings]
+
+        # Placement relies on the environment groups being in order.
+        indices = [
+            env_index.get((case["environment"] or "").strip()) for case in cases
+        ]
+        known = [index for index in indices if index is not None]
+        if known != sorted(known):
+            report["warnings"].append(
+                f"{key}: the saved order mixes environment groups, so requested "
+                f"test cases may be placed in the wrong spot; fix "
+                f"cycle_templates.json."
+            )
 
     # Requested test cases must exist; requested versions are only reported,
     # because the API always uses the latest version.

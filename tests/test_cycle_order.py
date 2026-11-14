@@ -4,36 +4,12 @@ import unittest
 
 from lsst.ts.planning.tool.cycle_order import (
     PLACEMENT_RULES,
+    load_cycle_templates,
     load_template_order,
     order_template_cases,
     place_requested_cases,
+    template_entries,
 )
-
-# Environments of the R505 test cases, as recorded from the API.
-R505_ENVIRONMENTS = {
-    "BLOCK-T17": "AuxTel",
-    "BLOCK-T20": "AuxTel",
-    "BLOCK-T19": "AuxTel",
-    "BLOCK-T594": "1. Daytime",
-    "BLOCK-T529": "1. Daytime",
-    "BLOCK-T250": "1. Daytime",
-    "BLOCK-T145": "1. Daytime",
-    "BLOCK-T144": "1. Daytime",
-    "BLOCK-T51": "1. Daytime",
-    "BLOCK-T3": "1. Daytime",
-    "BLOCK-T4": "1. Daytime",
-    "BLOCK-T70": "1. Daytime",
-    "BLOCK-T239": "2. Late Afternoon",
-    "BLOCK-T658": "2. Late Afternoon",
-    "BLOCK-T245": "3. Early Night",
-    "BLOCK-T625": "3. Early Night",
-    "BLOCK-T624": "6. Night",
-    "BLOCK-T539": "6. Night",
-    "BLOCK-T196": "7. End Night",
-    "BLOCK-T619": "7. End Night",
-    "BLOCK-T242": "7. End Night",
-    "BLOCK-T664": "7. End Night",
-}
 
 
 def load_env_index():
@@ -51,10 +27,8 @@ class TestCycleOrder(unittest.TestCase):
     def setUp(self):
         self.env_index = load_env_index()
         self.order = load_template_order()
-        self.r505 = [
-            {"key": key, "environment": R505_ENVIRONMENTS[key]}
-            for key in self.order["BLOCK-R505"]
-        ]
+        self.templates = load_cycle_templates()
+        self.r505 = template_entries(self.templates["BLOCK-R505"])
 
     def test_load_template_order(self):
         self.assertSetEqual(set(self.order), {"BLOCK-R505", "BLOCK-R506"})
@@ -68,8 +42,11 @@ class TestCycleOrder(unittest.TestCase):
             self.assertIn(environment, self.env_index)
 
     def test_saved_order_is_grouped_by_environment(self):
-        indices = [self.env_index[case["environment"]] for case in self.r505]
-        self.assertListEqual(indices, sorted(indices))
+        for key, template in self.templates.items():
+            entries = template_entries(template)
+            self.assertTrue(all(entry["environment"] for entry in entries), key)
+            indices = [self.env_index[entry["environment"]] for entry in entries]
+            self.assertListEqual(indices, sorted(indices), key)
 
     def test_order_template_cases(self):
         live = list(reversed(self.r505))
@@ -92,8 +69,8 @@ class TestCycleOrder(unittest.TestCase):
         self.assertNotIn("BLOCK-T51", keys(cases))
         # New case goes to the end of its group, before 3. Early Night.
         i = keys(cases).index("BLOCK-T999")
-        self.assertEqual(keys(cases)[i - 1], "BLOCK-T658")
-        self.assertEqual(keys(cases)[i + 1], "BLOCK-T245")
+        self.assertEqual(keys(cases)[i - 1], "BLOCK-T245")
+        self.assertEqual(keys(cases)[i + 1], "BLOCK-T625")
         self.assertEqual(len(warnings), 2)
 
     def test_place_requested_cases(self):
@@ -110,8 +87,8 @@ class TestCycleOrder(unittest.TestCase):
         cases, skipped = place_requested_cases(self.r505, requested, self.env_index)
         result = keys(cases)
 
-        # Daytime: end of 1. Daytime, after T51 (DIMM, last of the day).
-        self.assertEqual(result[result.index("BLOCK-T51") + 1], "BLOCK-T600")
+        # Daytime: end of 1. Daytime, after T250 (TMA unpark, last of the day).
+        self.assertEqual(result[result.index("BLOCK-T250") + 1], "BLOCK-T600")
         self.assertEqual(result[result.index("BLOCK-T600") + 1], "BLOCK-T239")
         # On-sky: after the alignment (T539), right before the survey (T624),
         # in page order.
@@ -125,7 +102,7 @@ class TestCycleOrder(unittest.TestCase):
         self.assertEqual(cases[-1]["environment"], "8. Closed Dome")
         # Template cases keep their order.
         self.assertListEqual(
-            [key for key in result if key in R505_ENVIRONMENTS],
+            [key for key in result if key in self.order["BLOCK-R505"]],
             self.order["BLOCK-R505"],
         )
         self.assertListEqual(
@@ -148,7 +125,7 @@ class TestCycleOrder(unittest.TestCase):
         result = keys(cases)
         i = result.index("BLOCK-T700")
         self.assertEqual(result[i - 1], "BLOCK-T539")
-        self.assertEqual(result[i + 1], "BLOCK-T196")
+        self.assertEqual(result[i + 1], "BLOCK-T664")
 
     def test_place_on_sky_without_night_group(self):
         template = [case for case in self.r505 if case["environment"] != "6. Night"]
@@ -160,7 +137,7 @@ class TestCycleOrder(unittest.TestCase):
         result = keys(cases)
         i = result.index("BLOCK-T700")
         self.assertEqual(result[i - 1], "BLOCK-T625")
-        self.assertEqual(result[i + 1], "BLOCK-T196")
+        self.assertEqual(result[i + 1], "BLOCK-T664")
 
     def test_place_unknown_kind(self):
         with self.assertRaises(ValueError):

@@ -22,7 +22,7 @@ python/lsst/ts/planning/tool/
   utils.py              # load_json_data(filename, path) -> reads <path>/data/<filename>
   cycle_order.py        # pure functions: order template cases, place requested cases
   weekly_draft.py       # draft_week(zapi, plan, dry_run): checks everything, then writes
-  data/cycle_templates.json  # UI order of the template cycles (API can't give it)
+  data/cycle_templates.json  # UI order + environment of each template case (API cannot give the order)
   __init__.py           # star-imports the modules above (and version.py, generated)
 .claude/skills/draft-weekly-test-cycles/
   SKILL.md              # reading rules: Confluence notes page -> plan JSON -> zapi draft week

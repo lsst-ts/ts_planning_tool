@@ -5,7 +5,7 @@ import unittest
 from unittest.mock import AsyncMock, MagicMock
 
 import aiohttp
-from lsst.ts.planning.tool.cycle_order import load_cycle_templates
+from lsst.ts.planning.tool.cycle_order import load_cycle_templates, load_template_order
 from lsst.ts.planning.tool.weekly_draft import (
     DraftWeekError,
     draft_week,
@@ -83,7 +83,7 @@ def make_zapi(existing_cycles=(), missing_cases=(), folder=(None, "missing")):
     """A ZephyrInterface whose network methods are mocks."""
     with open(os.path.join(DATA, "environments.json")) as file:
         environments = json.load(file)["values"]
-    templates = load_cycle_templates()
+    order = load_template_order()
 
     zapi = MagicMock(spec=ZephyrInterface)
     zapi.get_environments = AsyncMock(return_value=environments)
@@ -92,7 +92,7 @@ def make_zapi(existing_cycles=(), missing_cases=(), folder=(None, "missing")):
         # Creation order differs from the saved UI order.
         return [
             {"key": case, "version": 1, "environmentId": ENV_IDS[ENVIRONMENTS[case]]}
-            for case in reversed(templates[key]["test_cases"])
+            for case in reversed(order[key])
         ]
 
     async def get(endpoint, params=None):
@@ -168,7 +168,7 @@ class TestWeeklyDraft(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(monday["name"], "2026-11-16 LSST Survey Plan")
         self.assertEqual(monday["planned_start"], "2026-11-16T03:00:00Z")
         self.assertEqual(monday["planned_end"], "2026-11-17T03:00:00Z")
-        template = self.templates["BLOCK-R505"]["test_cases"]
+        template = load_template_order()["BLOCK-R505"]
         # Template cases keep the saved UI order, not the API order.
         self.assertListEqual([k for k in keys(monday) if k in template], template)
         # On-sky at the start of 6. Night, calibration at the end.

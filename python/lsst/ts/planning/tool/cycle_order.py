@@ -32,6 +32,7 @@ __all__ = [
     "load_template_order",
     "order_template_cases",
     "place_requested_cases",
+    "template_entries",
 ]
 
 import os
@@ -68,9 +69,37 @@ def load_cycle_templates(filename="cycle_templates.json"):
     -------
     dict
         Template test cycle key -> dict with `label`, `weekdays` (the day
-        names the template is meant for) and `test_cases` (keys in UI order).
+        names the template is meant for) and `test_cases`, in UI order. Each
+        test case is a dict with `key` and `environment` (or, in older
+        files, just the key).
+
+    Notes
+    -----
+    The saved environments take precedence over the ones in the Zephyr Scale
+    template, so the support scientists can fix the order and the groups
+    here even before the template is updated in Zephyr Scale.
     """
     return load_json_data(filename, os.path.dirname(__file__))
+
+
+def template_entries(template):
+    """
+    Return the saved test cases of a template as dicts.
+
+    Parameters
+    ----------
+    template : dict
+        One template from `load_cycle_templates`.
+
+    Returns
+    -------
+    list of dict
+        Each with `key` and `environment` (None if not saved), in UI order.
+    """
+    return [
+        entry if isinstance(entry, dict) else {"key": entry, "environment": None}
+        for entry in template["test_cases"]
+    ]
 
 
 def load_template_order(filename="cycle_templates.json"):
@@ -92,7 +121,10 @@ def load_template_order(filename="cycle_templates.json"):
     load_cycle_templates
     """
     templates = load_cycle_templates(filename)
-    return {key: value["test_cases"] for key, value in templates.items()}
+    return {
+        key: [entry["key"] for entry in template_entries(template)]
+        for key, template in templates.items()
+    }
 
 
 def _environment_index(case, env_index):
