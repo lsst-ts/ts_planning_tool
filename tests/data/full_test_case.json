@@ -1,0 +1,163 @@
+{
+    "id": 158630511,
+    "key": "BLOCK-T21",
+    "name": "Test Zephyr Scale interface with Python",
+    "project": {
+        "id": 350001,
+        "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001",
+        "jiraProjectId": 10064,
+        "key": "BLOCK",
+        "enabled": true
+    },
+    "createdOn": "2024-05-17T16:56:13Z",
+    "objective": "Confirm that we can perform multiple operations using Python and Zephyr Scale.",
+    "precondition": null,
+    "estimatedTime": null,
+    "labels": [],
+    "component": null,
+    "priority": {
+        "id": 6360096,
+        "self": "https://api.zephyrscale.smartbear.com/v2/priorities/6360096",
+        "project": {
+            "id": 350001,
+            "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+        },
+        "name": "Normal",
+        "description": null,
+        "index": 2,
+        "color": "#ffa900",
+        "default": false
+    },
+    "status": {
+        "id": 6360092,
+        "self": "https://api.zephyrscale.smartbear.com/v2/statuses/6360092",
+        "project": {
+            "id": 350001,
+            "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+        },
+        "name": "Draft",
+        "description": null,
+        "index": 1,
+        "color": "#f0ad4e",
+        "archived": false,
+        "default": false
+    },
+    "folder": null,
+    "owner": {
+        "self": "https://rubinobs.atlassian.net/rest/api/2/user?accountId=62753116e51c620070bfbcd1",
+        "accountId": "62753116e51c620070bfbcd1",
+        "accountType": "atlassian",
+        "emailAddress": "bquint@lsst.org",
+        "avatarUrls": {
+            "48x48": "https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/62753116e51c620070bfbcd1/97d29ecf-0dc0-4761-94a6-c240cd1c26b0/48",
+            "24x24": "https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/62753116e51c620070bfbcd1/97d29ecf-0dc0-4761-94a6-c240cd1c26b0/24",
+            "16x16": "https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/62753116e51c620070bfbcd1/97d29ecf-0dc0-4761-94a6-c240cd1c26b0/16",
+            "32x32": "https://avatar-management--avatars.us-west-2.prod.public.atl-paas.net/62753116e51c620070bfbcd1/97d29ecf-0dc0-4761-94a6-c240cd1c26b0/32"
+        },
+        "displayName": "Bruno Quint",
+        "active": true,
+        "timeZone": "America/Santiago",
+        "locale": "en_US",
+        "groups": {
+            "size": 7,
+            "items": []
+        },
+        "applicationRoles": {
+            "size": 1,
+            "items": []
+        },
+        "expand": "groups,applicationRoles"
+    },
+    "testScript": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T21/teststeps",
+        "next": null,
+        "startAt": 0,
+        "maxResults": 3,
+        "total": 3,
+        "isLast": true,
+        "values": [
+            {
+                "inline": {
+                    "description": "Retrieve the information about test case <strong>BLOCK-T21 (1.0)</strong>",
+                    "testData": "",
+                    "expectedResult": "<br /><br />",
+                    "customFields": {
+                        "SAL Script Configuration": "ignore me",
+                        "External SAL Script?": true,
+                        "SAL Script Name": "do not consider me"
+                    },
+                    "reflectRef": null
+                },
+                "testCase": null
+            },
+            {
+                "inline": {
+                    "description": "Run BLOCK-T74 at elevation \"80\" with the filter \"r_03\"",
+                    "testData": null,
+                    "expectedResult": "BLOCK completes without error. The full BLOCK consists of 27 scripts and should take about 1hr to complete assuming TMA velocity settings of 5%.<br><br><strong>NOTE:&nbsp;</strong>If the \"r0_3\" filter is not installed, please choose the closest filter available.",
+                    "customFields": {
+                        "SAL Script Configuration": "id: BLOCK-T74<br>override:<br>&nbsp; run_elevation: 80<br>&nbsp; run_filter: \"r_03\"",
+                        "External SAL Script?": false,
+                        "SAL Script Name": "maintel/scheduler/add_block.py"
+                    },
+                    "reflectRef": null
+                },
+                "testCase": null
+            },
+            {
+                "inline": {
+                    "description": "Run BLOCK-T74 at elevation \"40\" with the filter \"r_03\"",
+                    "testData": null,
+                    "expectedResult": "BLOCK completes without error. The full BLOCK consists of 27 scripts and should take about 1hr to complete assuming TMA velocity settings of 5%.<br><br><strong>NOTE:&nbsp;</strong>If the \"r0_3\" filter is not installed, please choose the closest filter available.",
+                    "customFields": {
+                        "SAL Script Configuration": "id: BLOCK-T74<br>override:<br>&nbsp; run_elevation: 40<br>&nbsp; run_filter: \"r_03\"",
+                        "External SAL Script?": false,
+                        "SAL Script Name": "maintel/scheduler/add_block.py"
+                    },
+                    "reflectRef": null
+                },
+                "testCase": null
+            },
+            {
+                "inline": {
+                    "description": "Run BLOCK-T74 at elevation \"20\" with the filter \"r_03\"",
+                    "testData": null,
+                    "expectedResult": "BLOCK completes without error. The full BLOCK consists of 27 scripts and should take about 1hr to complete assuming TMA velocity settings of 5%.<br><br><strong>NOTE:&nbsp;</strong>If the \"r0_3\" filter is not installed, please choose the closest filter available.",
+                    "customFields": {
+                        "SAL Script Configuration": "id: BLOCK-T74<br>override:<br>&nbsp; run_elevation: 20<br>&nbsp; run_filter: \"r_03\"",
+                        "External SAL Script?": false,
+                        "SAL Script Name": "maintel/scheduler/add_block.py"
+                    },
+                    "reflectRef": null
+                },
+                "testCase": null
+            },
+            {
+                "inline": {
+                    "description": "Retrieve the information about test cycle <strong>BLOCK-R19</strong>.",
+                    "testData": null,
+                    "expectedResult": "",
+                    "customFields": {
+                        "SAL Script Configuration": "",
+                        "External SAL Script?": false,
+                        "SAL Script Name": ""
+                    },
+                    "reflectRef": null
+                },
+                "testCase": null
+            }
+        ]
+    },
+    "customFields": {
+        "End time available (UTC)": "",
+        "Time Critical": false,
+        "On Sky": false,
+        "Cadency": "",
+        "Start time available (UTC)": ""
+    },
+    "links": {
+        "self": "https://api.zephyrscale.smartbear.com/v2/testcases/BLOCK-T21/links",
+        "issues": [],
+        "webLinks": []
+    }
+}

@@ -12,6 +12,9 @@ zapi = "lsst.ts.planning.tool:run_zapi_command_line"
 [tool.setuptools.packages.find]
 where = ["python"]
 
+[tool.setuptools.package-data]
+"lsst.ts.planning.tool" = ["data/*.json"]
+
 [tool.setuptools_scm]
 write_to = "python/lsst/ts/planning/tool/version.py"
 write_to_template = """

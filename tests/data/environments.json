@@ -1,0 +1,174 @@
+{
+    "next": null,
+    "startAt": 0,
+    "maxResults": 50,
+    "total": 15,
+    "isLast": true,
+    "values": [
+        {
+            "id": 6824992,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "1. Daytime",
+            "description": "Tests to run from 7h to 17h.",
+            "index": 2,
+            "archived": false
+        },
+        {
+            "id": 6824993,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "2. Late Afternoon",
+            "description": "Tests to run from 17h to sunset.",
+            "index": 3,
+            "archived": false
+        },
+        {
+            "id": 6824994,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "3. Early Night",
+            "description": "Tests to run from sunset until 22h.",
+            "index": 4,
+            "archived": false
+        },
+        {
+            "id": 6824995,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "4. Mid Night",
+            "description": "Tests to run from 22h until 2h",
+            "index": 5,
+            "archived": false
+        },
+        {
+            "id": 6831594,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "5. Late Night",
+            "description": "Tests to run from 2h until 6h",
+            "index": 6,
+            "archived": false
+        },
+        {
+            "id": 6831595,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "7. End Night",
+            "description": "Tests to run at the end of the night. Last thing. Possibly leave them running. ",
+            "index": 8,
+            "archived": false
+        },
+        {
+            "id": 6831597,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "0. Time Critical ",
+            "description": "Tests with a particular time on Sky. ",
+            "index": 1,
+            "archived": false
+        },
+        {
+            "id": 6863590,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "AuxTel",
+            "description": "Plan for the night with AuxTel",
+            "index": 0,
+            "archived": false
+        },
+        {
+            "id": 6943099,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "8. Closed Dome",
+            "description": "Tests that need to be run in dark dome conditions (night) but should only be when the dome is closed due to environmental constraints.",
+            "index": 9,
+            "archived": false
+        },
+        {
+            "id": 6970598,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "6. Night",
+            "description": "Any time of the night",
+            "index": 7,
+            "archived": false
+        },
+        {
+            "id": 8032684,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "9. Deferred",
+            "description": "Tests that have been requested but deferred from the night plan. ",
+            "index": 10,
+            "archived": false
+        },
+        {
+            "id": 9541310,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "Simonyi Scheduler-Driven",
+            "description": "Scheduler-driven survey operations with the Simonyi Telescope. ",
+            "index": 11,
+            "archived": false
+        },
+        {
+            "id": 9541311,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "AuxTel Scheduler-Driven",
+            "description": "Scheduler-driven survey operations with the Auxiliary Telescope",
+            "index": 12,
+            "archived": false
+        },
+        {
+            "id": 9541312,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "Simonyi Engineering ",
+            "description": "Engineering or verification tests to run with the Simonyi Telescope",
+            "index": 13,
+            "archived": false
+        },
+        {
+            "id": 9541313,
+            "project": {
+                "id": 350001,
+                "self": "https://api.zephyrscale.smartbear.com/v2/projects/350001"
+            },
+            "name": "AuxTel Engineering",
+            "description": "Engineering or verification tests to run with the Auxiliary Telescope",
+            "index": 14,
+            "archived": false
+        }
+    ]
+}
