@@ -1,0 +1,1 @@
+Enable the mandatory ``insert-license`` pre-commit hook and update the license headers to the TSSW template.

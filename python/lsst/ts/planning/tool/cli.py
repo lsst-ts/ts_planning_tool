@@ -1,6 +1,6 @@
 # This file is part of ts_planning_tool.
 #
-# Developed for the LSST Data Management System.
+# Developed for the Vera C. Rubin Observatory Telescope and Site Systems.
 # This product includes software developed by the LSST Project
 # (https://www.lsst.org).
 # See the COPYRIGHT file at the top-level directory of this distribution
@@ -13,11 +13,12 @@
 #
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 # GNU General Public License for more details.
 #
 # You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# along with this program. If not, see <https://www.gnu.org/licenses/>.
+
 """Command line interface for Zephyr Scale API."""
 
 __all__ = ["run_zapi_command_line"]
@@ -37,7 +38,7 @@ from lsst.ts.planning.tool.zephyr_interface import AddTestCasesError, ZephyrInte
 async def draft_week_command(
     plan_file, execute=False, output_json=False, verbose=False, **kwargs
 ):
-    """Draft the test cycles of a week from a JSON plan (dry run by default)."""
+    """Draft the test cycles of a week from a JSON plan (dry run default)."""
     with open(plan_file, "r") as file:
         plan = json.load(file)
 
