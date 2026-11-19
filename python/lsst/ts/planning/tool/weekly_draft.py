@@ -267,9 +267,7 @@ async def draft_week(zapi, plan, dry_run=True, templates=None):
         report["warnings"] += [f"{key}: {warning}" for warning in warnings]
 
         # Placement relies on the environment groups being in order.
-        indices = [
-            env_index.get((case["environment"] or "").strip()) for case in cases
-        ]
+        indices = [env_index.get((case["environment"] or "").strip()) for case in cases]
         known = [index for index in indices if index is not None]
         if known != sorted(known):
             report["warnings"].append(
